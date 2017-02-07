@@ -1,0 +1,48 @@
+enum bits(8) itch_msg_type {
+    ITCH_MSG_TYPE_SYSTEM_EVENT = 'S',
+}
+#
+#enum bits(8) itch_event_code {
+#    ITCH_EVENT_CODE_START_OF_MESSAGES     = 'O',
+#    ITCH_EVENT_CODE_START_OF_SYSTEM_HOURS = 'S',
+#    ITCH_EVENT_CODE_START_OF_MKT_HOURS    = 'Q',
+#    ITCH_EVENT_CODE_END_OF_MKT_HOURS      = 'M',
+#    ITCH_EVENT_CODE_END_OF_SYSTEM_HOURS   = 'E',
+#    ITCH_EVENT_CODE_END_OF_MESSAGES       = 'C',
+#}
+#
+#enum bits(8) itch_buy_sell_indicator {
+#    ITCH_BUY_SELL_INDICATOR_BUY  = 'B',
+#    ITCH_BUY_SELL_INDICATOR_SELL = 'S',
+#}
+#
+#//typedef u48 timestamp;
+#
+#struct itch_msg_header {
+#    itch_msg_type message_type;
+#    u16           stock_locate;
+#    u16           tracking_number;
+#    u48           timestamp;
+#}
+#
+#struct itch_system_event {
+#    itch_msg_type message_type;
+#    u16           stock_locate;
+#    u16           tracking_number;
+#    u48           timestamp;
+#    c8            event_code;
+#}
+#
+#struct itch_add_order {
+#    itch_msg_type           message_type;
+#    u16                     stock_locate;
+#    u16                     tracking_number;
+#    u48                     timestamp;
+#    u64                     order_reference_number;
+#    itch_buy_sell_indicator buy_sell_indicator;
+#    u32                     shares;
+#    c8[8]                   stock;
+#    u32                     price;
+#}
+
+
