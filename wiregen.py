@@ -27,6 +27,7 @@ class TokenType(object):
     IDENT = 12
     COMMA = 13
     KWBITS = 14
+    EOF = 15
 
 
 def is_ident(token):
@@ -121,53 +122,58 @@ class Tokenizer(object):
         return self.token
 
     def next(self):
-        self.token = self.tokens.next()
+        try:
+            self.token = self.tokens.next()
+        except StopIteration:
+            self.token = Token(type=TokenType.EOF, value='', linum=-1)
         return self.token
+
+    def accept(self, type_):
+        if self.token.type == type_:
+            self.next()
+            return True
+        else:
+            return False
 
 
 def parse(lexer):
     enums = []
     structs = []
 
-    try:
-        while 1:
-            token = lexer.peek()
-            if token.type == TokenType.KWENUM:
-                enums.append(parse_enum(lexer))
-                token = lexer.next()
-            else:
-                raise Exception("Invalid token: {}".format(token))
-    except StopIteration:
-        return enums, structs
-
-    raise Exception("Should never get here")
+    while 1:
+        token = lexer.peek()
+        if lexer.accept(TokenType.KWENUM):
+            enum = parse_enum(lexer)
+            enums.append(enum)
+        elif lexer.accept(TokenType.EOF):
+            break
+        else:
+            raise Exception("SyntaxError({}): Invalid token '{}'".format(
+                token.linum, token.value))
+    return enums, structs
 
 
 def parse_enum(lexer):
-    token = lexer.next()
-    if token.type == TokenType.KWBITS:
-        token = lexer.next()
-        if token.type != TokenType.LPAREN:
+    if lexer.accept(TokenType.KWBITS):
+        if not lexer.accept(TokenType.LPAREN):
             raise Exception("Expected '(' after keyword 'bits'")
-        token = lexer.next()
-        if token.type != TokenType.NUMBER:
+
+        token = lexer.peek()
+        if not lexer.accept(TokenType.NUMBER):
             raise Exception("Expected number after keyword 'bits")
+
         width = token.value
-        token = lexer.next()
-        if token.type != TokenType.RPAREN:
+        if not lexer.accept(TokenType.RPAREN):
             raise Exception("Expected ')' after to close'bits' declaration")
-        token = lexer.next()
 
-    if token.type != TokenType.IDENT:
+    token = lexer.peek()
+    if not lexer.accept(TokenType.IDENT):
         raise Exception("Expected name after 'enum' keyword")
-
     name = token.value
 
-    token = lexer.next()
-    if token.type != TokenType.LBRACE:
+    if not lexer.accept(TokenType.LBRACE):
         raise Exception("Expected '{' to being enum declaration")
 
-    lexer.next()
     members = []
     for member in parse_enum_member(lexer):
         members.append(member)
@@ -176,8 +182,7 @@ def parse_enum(lexer):
         raise Exception("Enum '{}' declared with no values!".format(
             name))
 
-    token = lexer.peek()
-    if token.type != TokenType.RBRACE:
+    if not lexer.accept(TokenType.RBRACE):
         raise Exception("Expected '}}' to finish enum declaration, instead "
                 "received: '{}' on line {}".format(token.value, token.linum))
 
@@ -185,41 +190,39 @@ def parse_enum(lexer):
 
 
 def parse_enum_member(lexer):
-    token = lexer.peek()
     while 1:
-        if token.type == TokenType.RBRACE:
+        # allow comma after last member
+        if lexer.peek().type == TokenType.RBRACE:
             return
 
-        if token.type != TokenType.IDENT:
-            raise Exception("Expected enum member name, instead received '{}'".format(token.value))
-        else:
-            name = token.value
+        token  = lexer.peek()
+        name = token.value
+        if not lexer.accept(TokenType.IDENT):
+            raise Exception("SyntaxError({}): Expected enum member name, instead received '{}'".format(token.linum, token.value))
 
-        token = lexer.next()
-        if token.type != TokenType.EQUALS:
+        if not lexer.accept(TokenType.EQUALS):
             raise Exception("Expected '=' after enum name to give value")
 
-        token = lexer.next()
-        if token.type == TokenType.NUMBER:
+        token = lexer.peek()
+        if lexer.accept(TokenType.NUMBER):
             value = token.value
-        elif token.type == TokenType.QUOTE:
-            token = lexer.next()
-            if token.type != TokenType.IDENT:
+        elif lexer.accept(TokenType.QUOTE):
+            token = lexer.peek()
+            if not lexer.accept(TokenType.IDENT):
                 raise Exception("Invalid enum value: '{}'".format(token.value))
             if len(token.value) != 1 or not token.value.isalpha():
                 raise Exception("Invalid enum value: '{}'".format(token.value))
             value = "'{val}'".format(val=token.value)
 
-            token = lexer.next()
-            if token.type != TokenType.QUOTE:
+            if not lexer.accept(TokenType.QUOTE):
                 raise Exception("Mismatched quotes on enum value")
 
+        if lexer.peek().type == TokenType.RBRACE:
+            break
+        elif not lexer.accept(TokenType.COMMA):
+            raise Exception("Expected comma between enum declarations")
+
         yield EnumMember(name=name, value=value)
-
-        token = lexer.next()
-        if token.type == TokenType.COMMA:
-            token = lexer.next()
-
 
 
 if __name__ == '__main__':
