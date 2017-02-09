@@ -213,38 +213,26 @@ def parse(lexer):
 def parse_enum(lexer):
     if lexer.accept(TokenType.KWBITS):
         lexer.expect(TokenType.LPAREN)
-        #if not lexer.accept(TokenType.LPAREN):
-        #    raise Exception("Expected '(' after keyword 'bits'")
 
         token = lexer.peek()
-        #if not lexer.accept(TokenType.NUMBER):
-        #    raise Exception("Expected number after keyword 'bits")
         lexer.expect(TokenType.NUMBER)
 
         width = token.value
-        if not lexer.accept(TokenType.RPAREN):
-            raise Exception("Expected ')' to close 'bits' declaration")
+        lexer.expect(TokenType.RPAREN)
 
     token = lexer.peek()
-    if not lexer.accept(TokenType.IDENT):
-        raise Exception("Expected name after 'enum' keyword")
+    lexer.expect(TokenType.IDENT)
     name = token.value
-
-    if not lexer.accept(TokenType.LBRACE):
-        raise Exception("Expected '{' to being enum declaration")
+    lexer.expect(TokenType.LBRACE)
 
     members = []
     for member in parse_enum_member(lexer):
         members.append(member)
-
     if not members:
         raise Exception("Enum '{}' declared with no values!".format(
             name))
 
-    if not lexer.accept(TokenType.RBRACE):
-        raise Exception("Expected '}}' to finish enum declaration, instead "
-                "received: '{}' on line {}".format(token.value, token.linum))
-
+    lexer.expect(TokenType.RBRACE)
     return Enum(name=name, width=width, members=members)
 
 
@@ -256,30 +244,24 @@ def parse_enum_member(lexer):
 
         token  = lexer.peek()
         name = token.value
-        if not lexer.accept(TokenType.IDENT):
-            raise Exception("SyntaxError({}): Expected enum member name, instead received '{}'".format(token.linum, token.value))
-
-        if not lexer.accept(TokenType.EQUALS):
-            raise Exception("Expected '=' after enum name to give value")
+        lexer.expect(TokenType.IDENT)
+        lexer.expect(TokenType.EQUALS)
 
         token = lexer.peek()
         if lexer.accept(TokenType.NUMBER):
             value = token.value
         elif lexer.accept(TokenType.QUOTE):
             token = lexer.peek()
-            if not lexer.accept(TokenType.IDENT):
-                raise Exception("Invalid enum value: '{}'".format(token.value))
+            lexer.expect(TokenType.IDENT)
             if len(token.value) != 1 or not token.value.isalpha():
                 raise Exception("Invalid enum value: '{}'".format(token.value))
             value = "'{val}'".format(val=token.value)
-
-            if not lexer.accept(TokenType.QUOTE):
-                raise Exception("Mismatched quotes on enum value")
+            lexer.expect(TokenType.QUOTE)
 
         if lexer.peek().type == TokenType.RBRACE:
             break
-        elif not lexer.accept(TokenType.COMMA):
-            raise Exception("Expected comma between enum declarations")
+        else:
+            lexer.expect(TokenType.COMMA)
 
         yield EnumMember(name=name, value=value)
 
