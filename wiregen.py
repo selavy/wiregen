@@ -10,7 +10,7 @@ Token = namedtuple('Token', ['type', 'value', 'linum'])
 Enum = namedtuple('Enum', ['name', 'width', 'members'])
 EnumMember = namedtuple('EnumMember', ['name', 'value'])
 Struct = namedtuple('Struct', ['name', 'bit_width', 'byte_width', 'members'])
-StructMember = namedtuple('StructMember', ['name', 'type'])
+StructMember = namedtuple('StructMember', ['name', 'type', 'array_width'])
 
 
 class TokenType(object):
@@ -22,8 +22,8 @@ class TokenType(object):
     RPAREN = 5
     SEMICOLON = 6
     EQUALS = 7
-    LSQBRACKET = 8
-    RSQBRACKET = 9
+    LBRACKET = 8
+    RBRACKET = 9
     QUOTE = 10
     NUMBER = 11
     IDENT = 12
@@ -50,9 +50,9 @@ class TokenType(object):
             return ';'
         elif token == TokenType.EQUALS:
             return '='
-        elif token == TokenType.LSQBRACKET:
+        elif token == TokenType.LBRACKET:
             return '['
-        elif token == TokenType.RSQBRACKET:
+        elif token == TokenType.RBRACKET:
             return ']'
         elif token == TokenType.QUOTE:
             return "'"
@@ -122,9 +122,9 @@ def _tokenize(lines):
             elif token == '=':
                 yield Token(type=TokenType.EQUALS, value=token, linum=linum)
             elif token == '[':
-                yield Token(type=TokenType.LSQBRACKET, value=token, linum=linum)
+                yield Token(type=TokenType.LBRACKET, value=token, linum=linum)
             elif token == ']':
-                yield Token(type=TokenType.RSQBRACKET, value=token, linum=linum)
+                yield Token(type=TokenType.RBRACKET, value=token, linum=linum)
             elif token == "'":
                 yield Token(type=TokenType.QUOTE, value=token, linum=linum)
             elif token == ',':
@@ -222,16 +222,24 @@ def parse_struct_member(lexer):
                   ;
     member      ::= type_decl member_name ';';
     member_name ::= IDENT;
-    type_decl   ::= IDENT;
+    type_decl   ::= IDENT '[' NUMBER ']'
+                  | IDENT
+                  ;
     """
 
     while lexer.peek().type != TokenType.RBRACE:
+        array_width = 0
         type_ = lexer.peek().value
         lexer.expect(TokenType.IDENT)
+        if lexer.accept(TokenType.LBRACKET):
+            array_width = lexer.peek().value
+            lexer.expect(TokenType.NUMBER)
+            lexer.expect(TokenType.RBRACKET)
         name = lexer.peek().value
         lexer.expect(TokenType.IDENT)
         lexer.expect(TokenType.SEMICOLON)
-        yield StructMember(name=name, type=type_)
+        yield StructMember(name=name, type=type_,
+                array_width=int(array_width))
 
 
 def parse_enum(lexer):
