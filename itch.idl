@@ -20,25 +20,25 @@ struct itch_msg_header {
     u16           tracking_number;
     u48           timestamp;
 }
-#
-#struct itch_system_event {
-#    itch_msg_type message_type;
-#    u16           stock_locate;
-#    u16           tracking_number;
-#    u48           timestamp;
-#    c8            event_code;
-#}
-#
-#struct itch_add_order {
-#    itch_msg_type           message_type;
-#    u16                     stock_locate;
-#    u16                     tracking_number;
-#    u48                     timestamp;
-#    u64                     order_reference_number;
-#    itch_buy_sell_indicator buy_sell_indicator;
-#    u32                     shares;
-#    c8[8]                   stock;
-#    u32                     price;
-#}
+
+struct itch_system_event {
+    itch_msg_type message_type;
+    u16           stock_locate;
+    u16           tracking_number;
+    u48           timestamp;
+    c8            event_code;
+}
+
+struct itch_add_order {
+    itch_msg_type           message_type;
+    u16                     stock_locate;
+    u16                     tracking_number;
+    u48                     timestamp;
+    u64                     order_reference_number;
+    itch_buy_sell_indicator buy_sell_indicator;
+    u32                     shares;
+    c8[8]                   stock;
+    u32                     price;
+}
 
 

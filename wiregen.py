@@ -172,7 +172,6 @@ def parse(lexer):
     structs = []
 
     while not lexer.accept(TokenType.EOF):
-        token = lexer.peek()
         if lexer.accept(TokenType.KWENUM):
             enum = parse_enum(lexer)
             enums.append(enum)
@@ -180,8 +179,10 @@ def parse(lexer):
             struct = parse_struct(lexer)
             structs.append(struct)
         else:
+            token = lexer.peek()
             raise Exception("SyntaxError({}): Invalid token '{}'".format(
                 token.linum, token.value))
+
     return enums, structs
 
 
@@ -216,7 +217,10 @@ def parse_struct(lexer):
 def parse_struct_member(lexer):
     """
     Member grammar:
-    member      ::= type_decl member_name;
+    member_list ::= member member_list
+                  | member
+                  ;
+    member      ::= type_decl member_name ';';
     member_name ::= IDENT;
     type_decl   ::= IDENT;
     """
@@ -231,6 +235,14 @@ def parse_struct_member(lexer):
 
 
 def parse_enum(lexer):
+    """
+    Enum grammar:
+    enum        ::= 'enum' width_decl '{' member_list '}'
+    width_decl  ::= 'bits' '(' NUMBER ')'
+                  | 'bytes' '(' NUMBER ')'
+                  | [empty]
+                  ;
+    """
     if lexer.accept(TokenType.KWBITS):
         lexer.expect(TokenType.LPAREN)
         token = lexer.peek()
@@ -252,11 +264,7 @@ def parse_enum(lexer):
 
 
 def parse_enum_member(lexer):
-    while 1:
-        # allow comma after last member
-        if lexer.peek().type == TokenType.RBRACE:
-            return
-
+    while lexer.peek().type != TokenType.RBRACE:
         token  = lexer.peek()
         name = token.value
         lexer.expect(TokenType.IDENT)
