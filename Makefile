@@ -8,7 +8,7 @@ all: $(TARGET)
 $(GENERATED): ./wiregen.py
 	./wiregen.py > $@
 
-$(TARGET): $(GENERATED) main.cpp
+$(TARGET): main.cpp $(GENERATED)
 	$(CC) -o $@ $(CFLAGS) $<
 
 .PHONY: clean
