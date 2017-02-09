@@ -12,6 +12,7 @@ EnumMember = namedtuple('EnumMember', ['name', 'value'])
 Struct = namedtuple('Struct', ['name', 'bit_width', 'byte_width', 'members'])
 StructMember = namedtuple('StructMember', ['name', 'typedecl'])
 TypeDecl = namedtuple('TypeDecl', ['name', 'array_width'])
+BasicType = namedtuple('BasicType', ['width', 'signed', 'ctype'])
 
 
 class TokenType(object):
@@ -337,16 +338,54 @@ def parse_enum_member(lexer):
 
 
 def generate_enum(e):
-    yield '''enum {name} {{'''.format(name=e.name)
+    yield 'enum {name} {{'.format(name=e.name)
     max_len = 0
     for m in e.members:
         if len(m.name) > max_len:
             max_len = len(m.name)
     for m in e.members:
-        yield '''    {name:{width}} = {value},'''.format(
+        yield '    {name:{width}} = {value},'.format(
                 name=m.name, width=max_len, value=m.value)
-    yield '''}'''
+    yield '}'
 
+
+# TODO(plesslie): check structs that they do match their bit/byte width
+# sizes
+def generate_struct_def(struct, types):
+    """
+    types: dict mapping known type names to C typename
+    """
+    yield 'struct {name} {{'.format(name=struct.name)
+    for member in stuct.members:
+        yield '{typedecl} {name};'.format(
+                typedecl=types[member.name], name=member.name)
+    yield '}'
+
+
+def generate_struct(struct, types):
+    print('struct {name} {{'.format(name=struct.name))
+    struct_width = 0
+    outputs = []
+    for member in struct.members:
+        try:
+            typedecl = types[member.typedecl.name]
+        except KeyError, ke:
+            raise Exception("Unknown type {name}".format(name=ke))
+        outputs.append((typedecl.ctype, member.name))
+        struct_width += typedecl.width
+
+    # insert this struct into our list of types
+    types[struct.name] = BasicType(width=struct_width, signed=False,
+            ctype=struct.name)
+
+    max_len = 0
+    for td, name in outputs:
+        if len(td) > max_len:
+            max_len = len(td)
+    for td, name in outputs:
+        print('    {ctype:{width}} {name};'.format(
+            ctype=td, width=max_len, name=name))
+    print('};')
 
 if __name__ == '__main__':
     with open('itch.idl') as f:
@@ -354,9 +393,63 @@ if __name__ == '__main__':
 
     lexer = Tokenizer(lines)
     enums, structs, typedefs = parse(lexer)
-    pprint.pprint(enums)
-    for s in generate_enum(enums[0]):
-        print(s)
-    pprint.pprint(structs)
-    pprint.pprint(typedefs)
+    #pprint.pprint(enums)
+    #pprint.pprint(structs)
+    #pprint.pprint(typedefs)
+
+    types = {} # name -> BasicType
+    # TODO(plesslie): add types 'ts64', 'ts48', 'price64', 'price32'
+    # TODO(plesslie): 5.4 and 8.4 prices?
+
+    types['u8' ] = BasicType(width=8 , signed=False, ctype='uint8_t')
+    types['u16'] = BasicType(width=16, signed=False, ctype='uint16_t')
+    types['u32'] = BasicType(width=32, signed=False, ctype='uint32_t')
+    types['u64'] = BasicType(width=64, signed=False, ctype='uint64_t')
+    types['u48'] = BasicType(width=48, signed=False, ctype='uint8_t[6]')
+
+    types['s8' ] = BasicType(width=8 , signed=True, ctype='int8_t')
+    types['s16'] = BasicType(width=16, signed=True, ctype='int16_t')
+    types['s32'] = BasicType(width=32, signed=True, ctype='int32_t')
+    types['s64'] = BasicType(width=64, signed=True, ctype='int64_t')
+
+    types['c8'] = BasicType(width=8, signed=True, ctype='char')
+
+    for enum in enums:
+        # TODO(plesslie): support enums that aren't byte divisible
+        width = enum.width if enum.width > 0 else 8
+        if width < 8 or width > 64 or width % 8 != 0:
+            raise Exception("not supporting enums with width: {}".format(
+                width))
+        ctype = 'uint{width}_t'.format(width=width)
+        types[enum.name] = BasicType(width=width, signed=False, ctype=ctype)
+        print("added enum type with name {}".format(enum.name))
+        for ss in generate_enum(enum):
+            print(ss)
+        print()
+
+    struct = structs[0]
+    print('struct {name} {{'.format(name=struct.name))
+    struct_width = 0
+    outputs = []
+    for member in struct.members:
+        try:
+            typedecl = types[member.typedecl.name]
+        except KeyError, ke:
+            raise Exception("Unknown type {name}".format(name=ke))
+        #print('    {ctype} {name};'.format(
+        #    ctype=typedecl.ctype, name=member.name))
+        outputs.append((typedecl.ctype, member.name))
+        struct_width += typedecl.width
+    types[struct.name] = BasicType(width=struct_width, signed=False,
+            ctype=struct.name)
+
+    max_len = 0
+    for td, name in outputs:
+        if len(td) > max_len:
+            max_len = len(td)
+    for td, name in outputs:
+        print('    {ctype:{width}} {name};'.format(
+            ctype=td, width=max_len, name=name))
+
+    print('};')
 

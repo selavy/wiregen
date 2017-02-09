@@ -1,3 +1,26 @@
+enum bits(8) itch_msg_type {
+    ITCH_MT_SYSTEM_EVENT_MESSAGE      = 'S',
+    ITCH_MT_STOCK_DIRECTORY           = 'R',
+    ITCH_MT_STOCK_TRADING_ACTION      = 'H',
+    ITCH_MT_REG_SHO_INDICATOR         = 'Y',
+    ITCH_MT_MKT_PARTICIPANT_POSITION  = 'L',
+    ITCH_MT_MWCB_LEVEL_DECLINE        = 'V',
+    ITCH_MT_MWCB_STATUS               = 'W',
+    ITCH_MT_IPO_QUOTING_PERIOD_UPDATE = 'K',
+    ITCH_MT_ADD_ORDER                 = 'A',
+    ITCH_MT_ADD_ORDER_ATTRIBUTED      = 'F',
+    ITCH_MT_ORDER_EXECUTED            = 'E',
+    ITCH_MT_ORDER_EXECUTED_WITH_PRICE = 'C',
+    ITCH_MT_ORDER_CANCEL              = 'X',
+    ITCH_MT_ORDER_DELETE              = 'D',
+    ITCH_MT_ORDER_REPLACE             = 'U',
+    ITCH_MT_TRADE                     = 'P',
+    ITCH_MT_CROSS_TRADE               = 'Q',
+    ITCH_MT_BROKEN_TRADE              = 'B',
+    ITCH_MT_NOII                      = 'I',
+    ITCH_MT_RPII                      = 'N',
+}
+
 enum bits(8) itch_event_code {
     ITCH_EVENT_CODE_START_OF_MESSAGES     = 'O',
     ITCH_EVENT_CODE_START_OF_SYSTEM_HOURS = 'S',
