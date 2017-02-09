@@ -12,7 +12,7 @@ EnumMember = namedtuple('EnumMember', ['name', 'value'])
 Struct = namedtuple('Struct', ['name', 'bit_width', 'byte_width', 'members'])
 StructMember = namedtuple('StructMember', ['name', 'typedecl'])
 TypeDecl = namedtuple('TypeDecl', ['name', 'array_width'])
-BasicType = namedtuple('BasicType', ['width', 'signed', 'ctype'])
+BasicType = namedtuple('BasicType', ['width', 'span', 'signed', 'ctype'])
 
 
 class TokenType(object):
@@ -346,7 +346,7 @@ def generate_enum(e):
     for m in e.members:
         yield '    {name:{width}} = {value},'.format(
                 name=m.name, width=max_len, value=m.value)
-    yield '}'
+    yield '};'
 
 
 # TODO(plesslie): check structs that they do match their bit/byte width
@@ -371,20 +371,25 @@ def generate_struct(struct, types):
             typedecl = types[member.typedecl.name]
         except KeyError, ke:
             raise Exception("Unknown type {name}".format(name=ke))
-        outputs.append((typedecl.ctype, member.name))
-        struct_width += typedecl.width
+        outputs.append((typedecl.ctype, typedecl.span, member.name))
+        struct_width += typedecl.width * typedecl.span
 
     # insert this struct into our list of types
-    types[struct.name] = BasicType(width=struct_width, signed=False,
+    types[struct.name] = BasicType(width=struct_width, span=1, signed=False,
             ctype=struct.name)
 
     max_len = 0
-    for td, name in outputs:
-        if len(td) > max_len:
-            max_len = len(td)
-    for td, name in outputs:
-        print('    {ctype:{width}} {name};'.format(
-            ctype=td, width=max_len, name=name))
+    for ctype, _, _ in outputs:
+        if len(ctype) > max_len:
+            max_len = len(ctype)
+    for ctype, span, name in outputs:
+
+        if span > 1:
+            spanstr = '[{span}]'.format(span=span)
+        else:
+            spanstr = ''
+        print('    {ctype:{width}} {name}{span};'.format(
+            ctype=ctype, width=max_len, name=name, span=spanstr))
     print('};')
 
 if __name__ == '__main__':
@@ -398,18 +403,18 @@ if __name__ == '__main__':
     # TODO(plesslie): add types 'ts64', 'ts48', 'price64', 'price32'
     # TODO(plesslie): 5.4 and 8.4 prices?
 
-    types['u8' ] = BasicType(width=8 , signed=False, ctype='uint8_t')
-    types['u16'] = BasicType(width=16, signed=False, ctype='uint16_t')
-    types['u32'] = BasicType(width=32, signed=False, ctype='uint32_t')
-    types['u64'] = BasicType(width=64, signed=False, ctype='uint64_t')
-    types['u48'] = BasicType(width=48, signed=False, ctype='uint8_t[6]')
+    types['u8' ] = BasicType(width=8 , span=1, signed=False, ctype='uint8_t')
+    types['u16'] = BasicType(width=16, span=1, signed=False, ctype='uint16_t')
+    types['u32'] = BasicType(width=32, span=1, signed=False, ctype='uint32_t')
+    types['u64'] = BasicType(width=64, span=1, signed=False, ctype='uint64_t')
+    types['u48'] = BasicType(width=8 , span=4, signed=False, ctype='uint8_t')
 
-    types['s8' ] = BasicType(width=8 , signed=True, ctype='int8_t')
-    types['s16'] = BasicType(width=16, signed=True, ctype='int16_t')
-    types['s32'] = BasicType(width=32, signed=True, ctype='int32_t')
-    types['s64'] = BasicType(width=64, signed=True, ctype='int64_t')
+    types['s8' ] = BasicType(width=8 , span=1, signed=True, ctype='int8_t')
+    types['s16'] = BasicType(width=16, span=1, signed=True, ctype='int16_t')
+    types['s32'] = BasicType(width=32, span=1, signed=True, ctype='int32_t')
+    types['s64'] = BasicType(width=64, span=1, signed=True, ctype='int64_t')
 
-    types['c8'] = BasicType(width=8, signed=True, ctype='char')
+    types['c8'] = BasicType(width=8, span=1, signed=True, ctype='char')
 
     print('#pragma once')
     print()
@@ -425,7 +430,8 @@ if __name__ == '__main__':
             raise Exception("not supporting enums with width: {}".format(
                 width))
         ctype = 'uint{width}_t'.format(width=width)
-        types[enum.name] = BasicType(width=width, signed=False, ctype=ctype)
+        types[enum.name] = BasicType(width=width, span=1, signed=False,
+                ctype=ctype)
         for ss in generate_enum(enum):
             print(ss)
         print()
