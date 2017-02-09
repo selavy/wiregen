@@ -11,9 +11,9 @@ enum bits(8) itch_buy_sell_indicator {
     ITCH_BUY_SELL_INDICATOR_BUY  = 'B',
     ITCH_BUY_SELL_INDICATOR_SELL = 'S',
 }
-#
-#//typedef u48 timestamp;
-#
+
+typedef u48 timestamp;
+
 struct itch_msg_header {
     itch_msg_type message_type;
     u16           stock_locate;

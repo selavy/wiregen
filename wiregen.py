@@ -10,7 +10,8 @@ Token = namedtuple('Token', ['type', 'value', 'linum'])
 Enum = namedtuple('Enum', ['name', 'width', 'members'])
 EnumMember = namedtuple('EnumMember', ['name', 'value'])
 Struct = namedtuple('Struct', ['name', 'bit_width', 'byte_width', 'members'])
-StructMember = namedtuple('StructMember', ['name', 'type', 'array_width'])
+StructMember = namedtuple('StructMember', ['name', 'typedecl'])
+TypeDecl = namedtuple('TypeDecl', ['name', 'array_width'])
 
 
 class TokenType(object):
@@ -30,7 +31,8 @@ class TokenType(object):
     COMMA = 13
     KWBITS = 14
     KWBYTES = 15
-    EOF = 16
+    KWTYPEDEF = 16
+    EOF = 17
 
     @staticmethod
     def tostr(token):
@@ -66,6 +68,8 @@ class TokenType(object):
             return 'bits'
         elif token == TokenType.KWBYTES:
             return 'bytes'
+        elif token == TokenType.KWTYPEDEF:
+            return 'typedef'
         elif token == TokenType.EOF:
             return 'EOF'
         else:
@@ -109,6 +113,8 @@ def _tokenize(lines):
                 yield Token(type=TokenType.KWBITS, value=token, linum=linum)
             elif token == 'bytes':
                 yield Token(type=TokenType.KWBYTES, value=token, linum=linum)
+            elif token == 'typedef':
+                yield Token(type=TokenType.KWTYPEDEF, value=token, linum=linum)
             elif token == '(':
                 yield Token(type=TokenType.LPAREN, value=token, linum=linum)
             elif token == ')':
@@ -170,6 +176,7 @@ class Tokenizer(object):
 def parse(lexer):
     enums = []
     structs = []
+    typedefs = {} # alias -> original type
 
     while not lexer.accept(TokenType.EOF):
         if lexer.accept(TokenType.KWENUM):
@@ -178,12 +185,36 @@ def parse(lexer):
         elif lexer.accept(TokenType.KWSTRUCT):
             struct = parse_struct(lexer)
             structs.append(struct)
+        elif lexer.accept(TokenType.KWTYPEDEF):
+            alias, typedecl = parse_typedef(lexer)
+            typedefs[alias] = typedecl
         else:
             token = lexer.peek()
             raise Exception("SyntaxError({}): Invalid token '{}'".format(
                 token.linum, token.value))
 
-    return enums, structs
+    return enums, structs, typedefs
+
+
+def parse_typedecl(lexer):
+    array_width = 0
+    name = lexer.peek().value
+    lexer.expect(TokenType.IDENT)
+    if lexer.accept(TokenType.LBRACKET):
+        array_width = lexer.peek().value
+        lexer.expect(TokenType.NUMBER)
+        lexer.expect(TokenType.RBRACKET)
+    return TypeDecl(name=name, array_width=int(array_width))
+
+
+def parse_typedef(lexer):
+    # right now "typedefs" can only alias a typedecl to
+    # a new name.
+    typedecl = parse_typedecl(lexer)
+    alias = lexer.peek().value
+    lexer.expect(TokenType.IDENT)
+    lexer.expect(TokenType.SEMICOLON)
+    return alias, typedecl
 
 
 def parse_struct(lexer):
@@ -228,18 +259,18 @@ def parse_struct_member(lexer):
     """
 
     while lexer.peek().type != TokenType.RBRACE:
-        array_width = 0
-        type_ = lexer.peek().value
-        lexer.expect(TokenType.IDENT)
-        if lexer.accept(TokenType.LBRACKET):
-            array_width = lexer.peek().value
-            lexer.expect(TokenType.NUMBER)
-            lexer.expect(TokenType.RBRACKET)
+        #array_width = 0
+        typedecl = parse_typedecl(lexer)
+#        type_ = lexer.peek().value
+#        lexer.expect(TokenType.IDENT)
+#        if lexer.accept(TokenType.LBRACKET):
+#            array_width = lexer.peek().value
+#            lexer.expect(TokenType.NUMBER)
+#            lexer.expect(TokenType.RBRACKET)
         name = lexer.peek().value
         lexer.expect(TokenType.IDENT)
         lexer.expect(TokenType.SEMICOLON)
-        yield StructMember(name=name, type=type_,
-                array_width=int(array_width))
+        yield StructMember(name=name, typedecl=typedecl)
 
 
 def parse_enum(lexer):
@@ -272,6 +303,14 @@ def parse_enum(lexer):
 
 
 def parse_enum_member(lexer):
+    """
+    Enum member grammar:
+    # basically this, but last comma not required
+    member_list ::= member_decl member_list
+                  | member_decl,
+                  ;
+    member_decl ::= IDENT = "'" value "'"
+    """
     while lexer.peek().type != TokenType.RBRACE:
         token  = lexer.peek()
         name = token.value
@@ -302,7 +341,8 @@ if __name__ == '__main__':
         lines = f.readlines()
 
     lexer = Tokenizer(lines)
-    enums, structs = parse(lexer)
+    enums, structs, typedefs = parse(lexer)
     pprint.pprint(enums)
     pprint.pprint(structs)
+    pprint.pprint(typedefs)
 
