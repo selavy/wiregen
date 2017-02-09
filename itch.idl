@@ -41,7 +41,7 @@ struct itch_msg_header {
     itch_msg_type message_type;
     u16           stock_locate;
     u16           tracking_number;
-    u48           timestamp;
+    timestamp     timestamp;
 }
 
 struct itch_system_event {

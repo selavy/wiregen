@@ -362,13 +362,19 @@ def generate_struct_def(struct, types):
     yield '}'
 
 
-def generate_struct(struct, types):
+def generate_struct(struct, types, typedefs):
     print('struct {name} {{'.format(name=struct.name))
     struct_width = 0
     outputs = []
     for member in struct.members:
         try:
-            typedecl = types[member.typedecl.name]
+            # TODO(plesslie): support making typedefs for array types
+            name = typedefs[member.typedecl.name].name
+        except:
+            name = member.typedecl.name
+
+        try:
+            typedecl = types[name]
         except KeyError, ke:
             raise Exception("Unknown type {name}".format(name=ke))
         outputs.append((typedecl.ctype, typedecl.span, member.name))
@@ -436,8 +442,7 @@ if __name__ == '__main__':
             print(ss)
         print()
 
-    # TODO(plesslie): handle typedefs
     for struct in structs:
-        generate_struct(struct, types)
+        generate_struct(struct, types, typedefs)
         print()
 
