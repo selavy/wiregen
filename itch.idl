@@ -14,12 +14,12 @@ enum bits(8) itch_buy_sell_indicator {
 #
 #//typedef u48 timestamp;
 #
-#struct itch_msg_header {
-#    itch_msg_type message_type;
-#    u16           stock_locate;
-#    u16           tracking_number;
-#    u48           timestamp;
-#}
+struct itch_msg_header {
+    itch_msg_type message_type;
+    u16           stock_locate;
+    u16           tracking_number;
+    u48           timestamp;
+}
 #
 #struct itch_system_event {
 #    itch_msg_type message_type;

@@ -9,6 +9,8 @@ import pprint
 Token = namedtuple('Token', ['type', 'value', 'linum'])
 Enum = namedtuple('Enum', ['name', 'width', 'members'])
 EnumMember = namedtuple('EnumMember', ['name', 'value'])
+Struct = namedtuple('Struct', ['name', 'bit_width', 'byte_width', 'members'])
+StructMember = namedtuple('StructMember', ['name', 'type'])
 
 
 class TokenType(object):
@@ -27,7 +29,8 @@ class TokenType(object):
     IDENT = 12
     COMMA = 13
     KWBITS = 14
-    EOF = 15
+    KWBYTES = 15
+    EOF = 16
 
     @staticmethod
     def tostr(token):
@@ -61,6 +64,8 @@ class TokenType(object):
             return ','
         elif token == TokenType.KWBITS:
             return 'bits'
+        elif token == TokenType.KWBYTES:
+            return 'bytes'
         elif token == TokenType.EOF:
             return 'EOF'
         else:
@@ -102,6 +107,8 @@ def _tokenize(lines):
                 yield Token(type=TokenType.KWSTRUCT, value=token, linum=linum)
             elif token == 'bits':
                 yield Token(type=TokenType.KWBITS, value=token, linum=linum)
+            elif token == 'bytes':
+                yield Token(type=TokenType.KWBYTES, value=token, linum=linum)
             elif token == '(':
                 yield Token(type=TokenType.LPAREN, value=token, linum=linum)
             elif token == ')':
@@ -131,24 +138,6 @@ def _tokenize(lines):
                     linum, token))
 
 
-# struct_decl ::= 'struct' size_decl name '{' members_decl '}'
-#               | 'struct' name '{' members_decl '}'
-#               ;
-#
-# size_decl ::= 'bits' '(' number ')';
-#
-# members_decl ::= type name ';';
-#
-# enum_decl ::= 'enum' size_decl name '{' enum_members_decl '}';
-#
-# enum_members_decl ::= enum_members_decl ',' enum_members_decl
-#                     | name '=' "'" IDENT "'"
-#                     | name '=' number
-#                     ;
-#
-# name ::= IDENT;
-
-
 class Tokenizer(object):
 
     def __init__(self, lines):
@@ -172,7 +161,6 @@ class Tokenizer(object):
         else:
             return False
 
-
     def expect(self, type_):
         if not self.accept(type_):
             raise Exception("SyntaxError({linum}): expected '{typ}' token, instead received '{tkn}'".format(
@@ -183,51 +171,78 @@ def parse(lexer):
     enums = []
     structs = []
 
-    while 1:
+    while not lexer.accept(TokenType.EOF):
         token = lexer.peek()
         if lexer.accept(TokenType.KWENUM):
             enum = parse_enum(lexer)
             enums.append(enum)
-        elif lexer.accept(TokenType.EOF):
-            break
+        elif lexer.accept(TokenType.KWSTRUCT):
+            struct = parse_struct(lexer)
+            structs.append(struct)
         else:
             raise Exception("SyntaxError({}): Invalid token '{}'".format(
                 token.linum, token.value))
     return enums, structs
 
 
-#def parse_struct(lexer):
-#    if lexer.accept(TokenType.KWBITS):
-#        if not lexer.accept(TokenType.LPAREN):
-#            raise Exception("Expected '(' after keyword 'bits'")
-#
-#        width = lexer.peek().value
-#        if not lexer.accept(TokenType.NUMBER):
-#            raise Exception("Expected number after keyword 'bits'")
-#
-#        if not lexer.accept(TokenType.RPAREN):
-#            raise Exception("Expected ')'")
+def parse_struct(lexer):
+    bit_width = 0
+    byte_width = 0
+    if lexer.accept(TokenType.KWBITS):
+        lexer.expect(TokenType.RPAREN)
+        bit_width = lexer.peek().value
+        lexer.expect(TokenType.NUMBER)
+        lexer.expect(TokenType.RPAREN)
+    elif lexer.accept(TokenType.KWBYTES):
+        lexer.expect(TokenType.RPAREN)
+        byte_width = lexer.peek().value
+        lexer.expect(TokenType.NUMBER)
+        lexer.expect(TokenType.RPAREN)
 
+    name = lexer.peek().value
+    lexer.expect(TokenType.IDENT)
+    lexer.expect(TokenType.LBRACE)
+
+    members = [x for x in parse_struct_member(lexer)]
+    if not members:
+        raise Exception("Struct '{}' declared with no members!".format(
+            name))
+
+    lexer.expect(TokenType.RBRACE)
+    return Struct(name=name, bit_width=bit_width, byte_width=byte_width,
+            members=members)
+
+
+def parse_struct_member(lexer):
+    """
+    Member grammar:
+    member      ::= type_decl member_name;
+    member_name ::= IDENT;
+    type_decl   ::= IDENT;
+    """
+
+    while lexer.peek().type != TokenType.RBRACE:
+        type_ = lexer.peek().value
+        lexer.expect(TokenType.IDENT)
+        name = lexer.peek().value
+        lexer.expect(TokenType.IDENT)
+        lexer.expect(TokenType.SEMICOLON)
+        yield StructMember(name=name, type=type_)
 
 
 def parse_enum(lexer):
     if lexer.accept(TokenType.KWBITS):
         lexer.expect(TokenType.LPAREN)
-
         token = lexer.peek()
         lexer.expect(TokenType.NUMBER)
-
         width = token.value
         lexer.expect(TokenType.RPAREN)
 
-    token = lexer.peek()
+    name = lexer.peek().value
     lexer.expect(TokenType.IDENT)
-    name = token.value
     lexer.expect(TokenType.LBRACE)
 
-    members = []
-    for member in parse_enum_member(lexer):
-        members.append(member)
+    members = [x for x in parse_enum_member(lexer)]
     if not members:
         raise Exception("Enum '{}' declared with no values!".format(
             name))
