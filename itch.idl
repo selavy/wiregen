@@ -48,7 +48,7 @@ struct itch_system_event {
     itch_msg_type message_type;
     u16           stock_locate;
     u16           tracking_number;
-    u48           timestamp;
+    timestamp     timestamp;
     c8            event_code;
 }
 
@@ -56,7 +56,7 @@ struct itch_add_order {
     itch_msg_type           message_type;
     u16                     stock_locate;
     u16                     tracking_number;
-    u48                     timestamp;
+    timestamp               timestamp;
     u64                     order_reference_number;
     itch_buy_sell_indicator buy_sell_indicator;
     u32                     shares;
