@@ -29,6 +29,43 @@ class TokenType(object):
     KWBITS = 14
     EOF = 15
 
+    @staticmethod
+    def tostr(token):
+        if token == TokenType.KWENUM:
+            return 'enum'
+        elif token == TokenType.KWSTRUCT:
+            return 'struct'
+        elif token == TokenType.LBRACE:
+            return '{'
+        elif token == TokenType.RBRACE:
+            return '}'
+        elif token == TokenType.LPAREN:
+            return '('
+        elif token == TokenType.RPAREN:
+            return ')'
+        elif token == TokenType.SEMICOLON:
+            return ';'
+        elif token == TokenType.EQUALS:
+            return '='
+        elif token == TokenType.LSQBRACKET:
+            return '['
+        elif token == TokenType.RSQBRACKET:
+            return ']'
+        elif token == TokenType.QUOTE:
+            return "'"
+        elif token == TokenType.NUMBER:
+            return 'number'
+        elif token == TokenType.IDENT:
+            return 'identifier'
+        elif token == TokenType.COMMA:
+            return ','
+        elif token == TokenType.KWBITS:
+            return 'bits'
+        elif token == TokenType.EOF:
+            return 'EOF'
+        else:
+            raise Exception('Unknown token type!')
+
 
 def is_ident(token):
     if not token:
@@ -136,6 +173,12 @@ class Tokenizer(object):
             return False
 
 
+    def expect(self, type_):
+        if not self.accept(type_):
+            raise Exception("SyntaxError({linum}): expected '{typ}' token, instead received '{tkn}'".format(
+                linum=self.token.linum, typ=TokenType.tostr(type_), tkn=self.token.value))
+
+
 def parse(lexer):
     enums = []
     structs = []
@@ -153,18 +196,34 @@ def parse(lexer):
     return enums, structs
 
 
+#def parse_struct(lexer):
+#    if lexer.accept(TokenType.KWBITS):
+#        if not lexer.accept(TokenType.LPAREN):
+#            raise Exception("Expected '(' after keyword 'bits'")
+#
+#        width = lexer.peek().value
+#        if not lexer.accept(TokenType.NUMBER):
+#            raise Exception("Expected number after keyword 'bits'")
+#
+#        if not lexer.accept(TokenType.RPAREN):
+#            raise Exception("Expected ')'")
+
+
+
 def parse_enum(lexer):
     if lexer.accept(TokenType.KWBITS):
-        if not lexer.accept(TokenType.LPAREN):
-            raise Exception("Expected '(' after keyword 'bits'")
+        lexer.expect(TokenType.LPAREN)
+        #if not lexer.accept(TokenType.LPAREN):
+        #    raise Exception("Expected '(' after keyword 'bits'")
 
         token = lexer.peek()
-        if not lexer.accept(TokenType.NUMBER):
-            raise Exception("Expected number after keyword 'bits")
+        #if not lexer.accept(TokenType.NUMBER):
+        #    raise Exception("Expected number after keyword 'bits")
+        lexer.expect(TokenType.NUMBER)
 
         width = token.value
         if not lexer.accept(TokenType.RPAREN):
-            raise Exception("Expected ')' after to close'bits' declaration")
+            raise Exception("Expected ')' to close 'bits' declaration")
 
     token = lexer.peek()
     if not lexer.accept(TokenType.IDENT):
