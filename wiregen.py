@@ -336,6 +336,18 @@ def parse_enum_member(lexer):
         yield EnumMember(name=name, value=value)
 
 
+def generate_enum(e):
+    yield '''enum {name} {{'''.format(name=e.name)
+    max_len = 0
+    for m in e.members:
+        if len(m.name) > max_len:
+            max_len = len(m.name)
+    for m in e.members:
+        yield '''    {name:{width}} = {value},'''.format(
+                name=m.name, width=max_len, value=m.value)
+    yield '''}'''
+
+
 if __name__ == '__main__':
     with open('itch.idl') as f:
         lines = f.readlines()
@@ -343,6 +355,8 @@ if __name__ == '__main__':
     lexer = Tokenizer(lines)
     enums, structs, typedefs = parse(lexer)
     pprint.pprint(enums)
+    for s in generate_enum(enums[0]):
+        print(s)
     pprint.pprint(structs)
     pprint.pprint(typedefs)
 
