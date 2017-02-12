@@ -6,6 +6,7 @@ from collections import namedtuple
 import pprint
 
 
+UNKNOWN_ENUM_PRETTY_PRINT = "Unknown"
 Token = namedtuple('Token', ['type', 'value', 'linum'])
 Enum = namedtuple('Enum', ['name', 'width', 'members'])
 EnumMember = namedtuple('EnumMember', ['name', 'value'])
@@ -16,6 +17,7 @@ BasicType = namedtuple('BasicType', ['width', 'span', 'signed', 'ctype'])
 
 
 class TokenType(object):
+    # TODO(plesslie): enum in python2?
     KWENUM = 0
     KWSTRUCT = 1
     LBRACE = 2
@@ -260,14 +262,7 @@ def parse_struct_member(lexer):
     """
 
     while lexer.peek().type != TokenType.RBRACE:
-        #array_width = 0
         typedecl = parse_typedecl(lexer)
-#        type_ = lexer.peek().value
-#        lexer.expect(TokenType.IDENT)
-#        if lexer.accept(TokenType.LBRACKET):
-#            array_width = lexer.peek().value
-#            lexer.expect(TokenType.NUMBER)
-#            lexer.expect(TokenType.RBRACKET)
         name = lexer.peek().value
         lexer.expect(TokenType.IDENT)
         lexer.expect(TokenType.SEMICOLON)
@@ -347,6 +342,20 @@ def generate_enum(e):
         yield '    {name:{width}} = {value},'.format(
                 name=m.name, width=max_len, value=m.value)
     yield '};'
+
+
+def generate_enum_pretty_printer(e):
+    yield 'const char *to_string({name} e) {{'.format(name=e.name)
+    yield '    switch (e) {'
+
+    for m in e.members:
+        yield '        case {name}:'.format(name=m.name)
+        yield '            return "{value}";'.format(value=m.name)
+
+    yield '    }'
+    yield '    // no default case so compiler will warn'
+    yield '    return "{unknown}";'.format(unknown=UNKNOWN_ENUM_PRETTY_PRINT)
+    yield '}'
 
 
 # TODO(plesslie): check structs that they do match their bit/byte width
@@ -439,6 +448,9 @@ if __name__ == '__main__':
         types[enum.name] = BasicType(width=width, span=1, signed=False,
                 ctype=ctype)
         for ss in generate_enum(enum):
+            print(ss)
+        print()
+        for ss in generate_enum_pretty_printer(enum):
             print(ss)
         print()
 
