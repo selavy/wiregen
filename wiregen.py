@@ -9,7 +9,7 @@ import pprint
 UNKNOWN_ENUM_PRETTY_PRINT = "Unknown"
 Token = namedtuple('Token', ['type', 'value', 'linum'])
 Enum = namedtuple('Enum', ['name', 'width', 'members'])
-EnumMember = namedtuple('EnumMember', ['name', 'value'])
+EnumMember = namedtuple('EnumMember', ['name', 'value', 'string_repr'])
 Struct = namedtuple('Struct', ['name', 'bit_width', 'byte_width', 'members'])
 StructMember = namedtuple('StructMember', ['name', 'typedecl'])
 TypeDecl = namedtuple('TypeDecl', ['name', 'array_width'])
@@ -329,7 +329,7 @@ def parse_enum_member(lexer):
         else:
             lexer.expect(TokenType.COMMA)
 
-        yield EnumMember(name=name, value=value)
+        yield EnumMember(name=name, value=value, string_repr=name)
 
 
 def generate_enum(e):
@@ -350,7 +350,7 @@ def generate_enum_pretty_printer(e):
 
     for m in e.members:
         yield '        case {name}:'.format(name=m.name)
-        yield '            return "{value}";'.format(value=m.name)
+        yield '            return "{value}";'.format(value=m.string_repr)
 
     yield '    }'
     yield '    // no default case so compiler will warn'
