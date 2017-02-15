@@ -36,6 +36,7 @@ class TokenType(object):
     KWBYTES = 15
     KWTYPEDEF = 16
     EOF = 17
+    DQUOTE = 18
 
     @staticmethod
     def tostr(token):
@@ -75,6 +76,8 @@ class TokenType(object):
             return 'typedef'
         elif token == TokenType.EOF:
             return 'EOF'
+        elif token == TokenType.DQUOTE:
+            return '"'
         else:
             raise Exception('Unknown token type!')
 
@@ -106,6 +109,7 @@ def _tokenize(lines):
         line = line.replace('[', ' [ ')
         line = line.replace(']', ' ] ')
         line = line.replace("'", " ' ")
+        line = line.replace('"', ' " ')
         line = line.replace(',', ' , ')
         for token in line.split():
             if token == 'enum':
@@ -136,6 +140,8 @@ def _tokenize(lines):
                 yield Token(type=TokenType.RBRACKET, value=token, linum=linum)
             elif token == "'":
                 yield Token(type=TokenType.QUOTE, value=token, linum=linum)
+            elif token == '"':
+                yield Token(type=TokenType.DQUOTE, value=token, linum=linum)
             elif token == ',':
                 yield Token(type=TokenType.COMMA, value=token, linum=linum)
             elif token.isdigit():
@@ -306,6 +312,8 @@ def parse_enum_member(lexer):
                   | member_decl,
                   ;
     member_decl ::= IDENT = "'" value "'"
+    # TODO: allow number values
+    member_decl ::= IDENT = "'" value "'" "[" string "]"
     """
     while lexer.peek().type != TokenType.RBRACE:
         token  = lexer.peek()
@@ -320,16 +328,29 @@ def parse_enum_member(lexer):
             token = lexer.peek()
             lexer.expect(TokenType.IDENT)
             if len(token.value) != 1 or not token.value.isalpha():
-                raise Exception("Invalid enum value: '{}'".format(token.value))
+                raise Exception("Invalid enum value: '{}'".format(
+                    token.value))
             value = "'{val}'".format(val=token.value)
             lexer.expect(TokenType.QUOTE)
+
+        string_repr = name
+        # can provide a string representation in square brackets
+        if lexer.accept(TokenType.LBRACKET):
+            lexer.expect(TokenType.DQUOTE)
+            string_repr = ''
+            while not lexer.accept(TokenType.DQUOTE):
+                # TODO(plesslie): this is going to lose whitespace in
+                # string values
+                string_repr += lexer.peek().value
+                lexer.next()
+            lexer.expect(TokenType.RBRACKET)
 
         if lexer.peek().type == TokenType.RBRACE:
             break
         else:
             lexer.expect(TokenType.COMMA)
 
-        yield EnumMember(name=name, value=value, string_repr=name)
+        yield EnumMember(name=name, value=value, string_repr=string_repr)
 
 
 def generate_enum(e):
@@ -352,8 +373,9 @@ def generate_enum_pretty_printer(e):
         yield '        case {name}:'.format(name=m.name)
         yield '            return "{value}";'.format(value=m.string_repr)
 
+    yield '        // no default case so compiler will warn'
     yield '    }'
-    yield '    // no default case so compiler will warn'
+    yield ''
     yield '    return "{unknown}";'.format(unknown=UNKNOWN_ENUM_PRETTY_PRINT)
     yield '}'
 
