@@ -397,19 +397,6 @@ def generate_enum_pretty_printer(e):
     yield '}'
 
 
-# TODO(plesslie): check structs that they do match their bit/byte width
-# sizes
-def generate_struct_def(struct, types):
-    """
-    types: dict mapping known type names to C typename
-    """
-    yield 'struct {name} {{'.format(name=struct.name)
-    for member in stuct.members:
-        yield '{typedecl} {name};'.format(
-                typedecl=types[member.name], name=member.name)
-    yield '}'
-
-
 def generate_struct(struct, types, typedefs):
     print('struct {name} {{'.format(name=struct.name))
     struct_width = 0
