@@ -383,7 +383,7 @@ def generate_enum(e):
 
 
 def generate_enum_pretty_printer(e):
-    yield 'const char *to_string({name} e) {{'.format(name=e.name)
+    yield 'const char *{name}_to_string({name} e) {{'.format(name=e.name)
     yield '    switch (e) {'
 
     for m in e.members:
