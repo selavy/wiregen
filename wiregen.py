@@ -8,7 +8,7 @@ import pprint
 
 UNKNOWN_ENUM_PRETTY_PRINT = "Unknown"
 Token = namedtuple('Token', ['type', 'value', 'linum'])
-Enum = namedtuple('Enum', ['name', 'width', 'members'])
+Enum = namedtuple('Enum', ['name', 'width', 'members', 'prefix'])
 EnumMember = namedtuple('EnumMember', ['name', 'value', 'string_repr'])
 Struct = namedtuple('Struct', ['name', 'bit_width', 'byte_width', 'members'])
 StructMember = namedtuple('StructMember', ['name', 'typedecl'])
@@ -37,6 +37,7 @@ class TokenType(object):
     KWTYPEDEF = 16
     EOF = 17
     DQUOTE = 18
+    KWPREFIX = 19
 
     @staticmethod
     def tostr(token):
@@ -72,6 +73,8 @@ class TokenType(object):
             return 'bits'
         elif token == TokenType.KWBYTES:
             return 'bytes'
+        elif token == TokenType.KWPREFIX:
+            return 'prefix'
         elif token == TokenType.KWTYPEDEF:
             return 'typedef'
         elif token == TokenType.EOF:
@@ -144,6 +147,8 @@ def _tokenize(lines):
                 yield Token(type=TokenType.DQUOTE, value=token, linum=linum)
             elif token == ',':
                 yield Token(type=TokenType.COMMA, value=token, linum=linum)
+            elif token == 'prefix':
+                yield Token(type=TokenType.KWPREFIX, value=token, linum=linum)
             elif token.isdigit():
                 yield Token(type=TokenType.NUMBER, value=int(token), linum=linum)
             elif is_ident(token):
@@ -284,27 +289,37 @@ def parse_enum(lexer):
                   | [empty]
                   ;
     """
-    if lexer.accept(TokenType.KWBITS):
-        lexer.expect(TokenType.LPAREN)
-        token = lexer.peek()
-        lexer.expect(TokenType.NUMBER)
-        width = token.value
-        lexer.expect(TokenType.RPAREN)
+
+    prefix = None
+    while lexer.peek().type in (TokenType.KWPREFIX, TokenType.KWBITS):
+        if lexer.accept(TokenType.KWPREFIX):
+            lexer.expect(TokenType.LPAREN)
+            prefix = lexer.peek().value
+            lexer.expect(TokenType.IDENT)
+            lexer.expect(TokenType.RPAREN)
+        elif lexer.accept(TokenType.KWBITS):
+            lexer.expect(TokenType.LPAREN)
+            token = lexer.peek()
+            lexer.expect(TokenType.NUMBER)
+            width = token.value
+            lexer.expect(TokenType.RPAREN)
+        else:
+            raise Exception("shouldn't be able to get here")
 
     name = lexer.peek().value
     lexer.expect(TokenType.IDENT)
     lexer.expect(TokenType.LBRACE)
 
-    members = [x for x in parse_enum_member(lexer)]
+    members = [x for x in parse_enum_member(lexer, prefix)]
     if not members:
         raise Exception("Enum '{}' declared with no values!".format(
             name))
 
     lexer.expect(TokenType.RBRACE)
-    return Enum(name=name, width=width, members=members)
+    return Enum(name=name, width=width, members=members, prefix=prefix)
 
 
-def parse_enum_member(lexer):
+def parse_enum_member(lexer, prefix=None):
     """
     Enum member grammar:
     # basically this, but last comma not required
@@ -350,6 +365,8 @@ def parse_enum_member(lexer):
         else:
             lexer.expect(TokenType.COMMA)
 
+        if prefix:
+            name = prefix + name
         yield EnumMember(name=name, value=value, string_repr=string_repr)
 
 
