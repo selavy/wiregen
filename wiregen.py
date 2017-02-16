@@ -415,6 +415,18 @@ def generate_struct(struct, types, typedefs):
         outputs.append((typedecl.ctype, typedecl.span, member.name))
         struct_width += typedecl.width * typedecl.span
 
+    if struct.bit_width:
+        if struct_width != struct.bit_width:
+            raise Exception('Struct has specified bit width of: {w1}, but calculated width is: {w2}'.format(
+                w1=struct.bit_width, w2=struct_width))
+    elif struct.byte_width:
+        if struct_width != struct.byte_width * 8:
+            raise Exception('Struct has specified byte width of: {w1}, but calculated width is: {w2}'.format(
+                w1=struct.byte_width, w2=struct_width))
+
+
+
+
     # insert this struct into our list of types
     types[struct.name] = BasicType(width=struct_width, span=1, signed=False,
             ctype=struct.name)
