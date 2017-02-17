@@ -235,12 +235,12 @@ def parse_struct(lexer):
     bit_width = 0
     byte_width = 0
     if lexer.accept(TokenType.KWBITS):
-        lexer.expect(TokenType.RPAREN)
+        lexer.expect(TokenType.LPAREN)
         bit_width = lexer.peek().value
         lexer.expect(TokenType.NUMBER)
         lexer.expect(TokenType.RPAREN)
     elif lexer.accept(TokenType.KWBYTES):
-        lexer.expect(TokenType.RPAREN)
+        lexer.expect(TokenType.LPAREN)
         byte_width = lexer.peek().value
         lexer.expect(TokenType.NUMBER)
         lexer.expect(TokenType.RPAREN)
@@ -460,7 +460,7 @@ if __name__ == '__main__':
     types['u16'] = BasicType(width=16, span=1, signed=False, ctype='uint16_t')
     types['u32'] = BasicType(width=32, span=1, signed=False, ctype='uint32_t')
     types['u64'] = BasicType(width=64, span=1, signed=False, ctype='uint64_t')
-    types['u48'] = BasicType(width=8 , span=4, signed=False, ctype='uint8_t')
+    types['u48'] = BasicType(width=8 , span=6, signed=False, ctype='uint8_t')
 
     types['s8' ] = BasicType(width=8 , span=1, signed=True, ctype='int8_t')
     types['s16'] = BasicType(width=16, span=1, signed=True, ctype='int16_t')

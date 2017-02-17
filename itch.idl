@@ -37,7 +37,7 @@ enum bits(8) prefix(ITCH_BUY_SELL_INDICATOR_) itch_buy_sell_indicator {
 
 typedef u48 timestamp;
 
-struct itch_msg_header {
+struct bytes(11) itch_msg_header {
     itch_msg_type message_type;
     u16           stock_locate;
     u16           tracking_number;
