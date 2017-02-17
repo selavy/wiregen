@@ -412,8 +412,14 @@ def generate_struct(struct, types, typedefs):
             typedecl = types[name]
         except KeyError, ke:
             raise Exception("Unknown type {name}".format(name=ke))
-        outputs.append((typedecl.ctype, typedecl.span, member.name))
-        struct_width += typedecl.width * typedecl.span
+
+        # TODO(plesslie): this is a bad hack.  Need to properly support array types
+        if member.typedecl.array_width > 1:
+            span = typedecl.span * member.typedecl.array_width
+        else:
+            span = typedecl.span
+        outputs.append((typedecl.ctype, span, member.name))
+        struct_width += typedecl.width * span
 
     if struct.bit_width:
         if struct_width != struct.bit_width:

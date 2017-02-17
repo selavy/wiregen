@@ -44,7 +44,7 @@ struct bytes(11) itch_msg_header {
     timestamp     timestamp;
 }
 
-struct itch_system_event {
+struct bytes(12) itch_system_event {
     itch_msg_type message_type;
     u16           stock_locate;
     u16           tracking_number;
@@ -52,7 +52,7 @@ struct itch_system_event {
     c8            event_code;
 }
 
-struct itch_add_order {
+struct bytes(36) itch_add_order {
     itch_msg_type           message_type;
     u16                     stock_locate;
     u16                     tracking_number;
