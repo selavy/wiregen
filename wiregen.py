@@ -232,8 +232,8 @@ def parse_typedef(lexer):
 
 
 def parse_struct(lexer):
-    bit_width = 0
-    byte_width = 0
+    bit_width = None
+    byte_width = None
     if lexer.accept(TokenType.KWBITS):
         lexer.expect(TokenType.LPAREN)
         bit_width = lexer.peek().value
@@ -421,11 +421,8 @@ def generate_struct(struct, types, typedefs):
                 w1=struct.bit_width, w2=struct_width))
     elif struct.byte_width:
         if struct_width != struct.byte_width * 8:
-            raise Exception('Struct has specified byte width of: {w1}, but calculated width is: {w2}'.format(
+            raise Exception('Struct has specified byte width of: {w1}, but calculated bit width is: {w2}'.format(
                 w1=struct.byte_width, w2=struct_width))
-
-
-
 
     # insert this struct into our list of types
     types[struct.name] = BasicType(width=struct_width, span=1, signed=False,
