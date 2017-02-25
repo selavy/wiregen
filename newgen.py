@@ -80,84 +80,64 @@ def parse_file(f):
     pass
 
 def _tokenize(stream):
-    cur = ''
-    type_ = TokenType.UNK
+    size = len(stream)
+    i = 0
+    while 1:
+        while i < size and stream[i].isspace():
+            i += 1
+        if not (i < size):
+            break
 
-    for c in stream:
-        if type_ == TokenType.UNK:
-            if c == '(':
-                yield Token(TokenType.LPAREN, c)
-            elif c == ')':
-                yield Token(TokenType.RPAREN, c)
-            elif c == '[':
-                yield Token(TokenType.LBRACKET, c)
-            elif c == ']':
-                yield Token(TokenType.RBRACKET, c)
-            elif c == '{':
-                yield Token(TokenType.LBRACE, c)
-            elif c == '}':
-                yield Token(TokenType.RBRACE, c)
-            elif c == ':':
-                yield Token(TokenType.COLON, c)
-            elif c == ',':
-                yield Token(TokenType.COMMA, c)
-            elif c == '=':
-                yield Token(TokenType.EQUALS, c)
-            elif c == "'":
-                yield Token(TokenType.SQUOTE, c)
-            elif c == ';':
-                yield Token(TokenType.SEMICOLON, c)
-            elif c == '"':
-                cur = c
-                type_ = TokenType.STRING
-            elif c.isspace():
-                cur = c
-                type_ = TokenType.WHITESPACE
-            elif c.isdigit():
-                cur = c
-                type_ = TokenType.INTEGER
-            elif c.isalpha():
-                cur = c
-                type_ = TokenType.IDENT
-            else:
-                raise Exception('Invalid character: {}'.format(c))
-        elif type_ == TokenType.STRING:
-            if c == '"':
-                yield Token(TokenType.STRING, cur)
-                cur = ''
-                type_ = TokenType.UNK
-            else:
-                cur += c
-        elif type_ == TokenType.WHITESPACE:
-            if c.isspace():
-                cur += c
-            else:
-                yield Token(TokenType.WHITESPACE, cur)
-                cur = ''
-                type_ = TokenType.UNK
-        elif type_ == TokenType.INTEGER:
-            if c.isdigit():
-                cur += c
-            else:
-                yield Token(TokenType.INTEGER, cur)
-                cur = ''
-                type_ = TokenType.UNK
-        elif type_ == TokenType.IDENT:
-            if c.isalpha() or c.isdigit() or c == '_':
-                cur += c
-                continue
-            elif cur == 'enum':
-                yield Token(TokenType.KWENUM, cur)
-            elif cur == 'bits':
-                yield Token(TokenType.KWBITS, cur)
-            elif cur == 'bytes':
-                yield Token(TokenType.KWBYTES, cur)
-            else:
-                yield Token(TokenType.IDENT, cur)
-            cur = ''
-            type_ = TokenType.UNK
+        c = stream[i]
+        i += 1
+
+        if c == '(':
+            yield Token(TokenType.LPAREN, '(')
+        elif c == ')':
+            yield Token(TokenType.RPAREN, ')')
+        elif c == '[':
+            yield Token(TokenType.LBRACKET, '[')
+        elif c == ']':
+            yield Token(TokenType.RBRACKET, ']')
+        elif c == '{':
+            yield Token(TokenType.LBRACE, '{')
+        elif c == '}':
+            yield Token(TokenType.RBRACE, '}')
+        elif c == ':':
+            yield Token(TokenType.COLON, ':')
+        elif c == ',':
+            yield Token(TokenType.COMMA, ',')
+        elif c == '=':
+            yield Token(TokenType.EQUALS, '=')
+        elif c == "'":
+            yield Token(TokenType.SQUOTE, "'")
+        elif c == ';':
+            yield Token(TokenType.SEMICOLON, ';')
+        elif c == '"':
+            val = c
+            while i < size and stream[i] != '"':
+                c += stream[i]
+                i += 1
+            if i >= size:
+                raise Exception('''Unmatched '"' character''')
+            i += 1
+            yield Token(TokenType.STRING, val)
         else:
-            raise Exception('Unknown type {}'.format(type_))
+            val = c
+            while i < size:
+                c = stream[i]
+                if not (c.isalpha() or c.isdigit() or c == '_'):
+                    break
+                val += c
+                i += 1
+            if val == 'enum':
+                yield Token(TokenType.KWENUM, val)
+            elif val == 'bits':
+                yield Token(TokenType.KWBITS, val)
+            elif val == 'bytes':
+                yield Token(TokenType.KWBYTES, val)
+            else:
+                yield Token(TokenType.IDENT, val)
 
 
 if __name__ == '__main__':
