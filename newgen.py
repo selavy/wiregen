@@ -24,6 +24,8 @@ class TokenType(object):
     UNK = 16
     WHITESPACE = 17
     SQUOTE = 18
+    EOF = 19
+    KWSTRUCT = 20
 
     @staticmethod
     def tostr(t):
@@ -63,6 +65,10 @@ class TokenType(object):
             return 'whitespace'
         elif t == TokenType.SQUOTE:
             return "'"
+        elif t == TokenType.EOF:
+            return 'EOF'
+        elif t == TokenType.KWSTRUCT:
+            return 'struct'
         else:
             raise Exception('Unknown type: {}'.format(t))
 
@@ -76,9 +82,6 @@ class Token(object):
                 typ=TokenType.tostr(self.type_), val=self.value)
 
 
-def parse_file(f):
-    pass
-
 def _tokenize(stream):
     size = len(stream)
     i = 0
@@ -87,10 +90,8 @@ def _tokenize(stream):
             i += 1
         if not (i < size):
             break
-
         c = stream[i]
         i += 1
-
         if c == '(':
             yield Token(TokenType.LPAREN, '(')
         elif c == ')':
@@ -136,13 +137,59 @@ def _tokenize(stream):
                 yield Token(TokenType.KWBITS, val)
             elif val == 'bytes':
                 yield Token(TokenType.KWBYTES, val)
+            elif val == 'struct':
+                yield Token(TokenType.KWSTRUCT, val)
             else:
                 yield Token(TokenType.IDENT, val)
+
+
+class Lexer(object):
+    def __init__(self, lines):
+        self.tokenizer = _tokenize(lines)
+        self.cur = self.tokenizer.next()
+
+    def next(self):
+        try:
+            self.cur = self.tokenizer.next()
+        except StopIteration:
+            self.cur = Token(TokenType.EOF, '')
+        return self.cur
+
+    def peek(self):
+        return self.cur
+
+    def expect(self, type_):
+        if self.cur.type_ != type_:
+            raise Exception('SyntaxError: expected {} token'.format(
+                TokenType.tostr(type_)))
+
+    def accept(self, type_):
+        if self.cur.type_ == type_:
+            self.next()
+            return True
+        else:
+            return False
+
+
+def parse(lexer):
+    while not lexer.accept(TokenType.EOF):
+        if lexer.accept(TokenType.KWENUM):
+            print("enum")
+        elif lexer.accept(TokenType.KWSTRUCT):
+            print("struct")
+        lexer.next()
+#        else:
+#            lexer.next()
+#            raise Exception('Unexpected token type {}'.format(
+#                TokenType.tostr(lexer.peek().type_)))
 
 
 if __name__ == '__main__':
     with open('itch5x.idl') as f:
         lines = f.readlines()
     lines = '\n'.join(lines)
-    for token in _tokenize(lines):
-        print(token)
+    lexer = Lexer(lines)
+    parse(lexer)
+#    for token in _tokenize(lines):
+#        print(token)
+
