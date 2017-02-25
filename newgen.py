@@ -174,7 +174,7 @@ class Lexer(object):
 def parse(lexer):
     while not lexer.accept(TokenType.EOF):
         if lexer.accept(TokenType.KWENUM):
-            print("enum")
+            parse_enum(lexer)
         elif lexer.accept(TokenType.KWSTRUCT):
             print("struct")
         lexer.next()
@@ -182,6 +182,27 @@ def parse(lexer):
 #            lexer.next()
 #            raise Exception('Unexpected token type {}'.format(
 #                TokenType.tostr(lexer.peek().type_)))
+
+def parse_enum(lexer):
+    name = lexer.peek().value
+    lexer.expect(TokenType.IDENT)
+    attribs = {}
+    if lexer.accept(TokenType.LPAREN):
+        while not lexer.accept(TokenType.RPAREN):
+            key = lexer.peek().value
+            lexer.expect(TokenType.IDENT)
+            lexer.expect(TokenType.EQUALS)
+            val = lexer.peek().value
+            if lexer.accept(TokenType.INTEGER):
+                val = int(val)
+            elif not lexer.accept(TokenType.STRING):
+                raise Exception('Expected integer or string value in attributes list')
+            attribs[key] = val
+
+    print("Parsed attributes: {}".format(str(attribs)))
+    lexer.expect(TokenType.LBRACE)
+
+
 
 
 if __name__ == '__main__':
