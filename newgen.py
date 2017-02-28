@@ -2,6 +2,49 @@
 
 from __future__ import print_function
 import sys
+import pprint
+
+
+class EnumValue(object):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return '{name} = {value}'.format(name=self.name, value=self.value)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class Enum(object):
+    def __init__(self, name, members, attribs):
+        self.name = name
+        self.members = members
+        self.attribs = attribs
+
+
+class Struct(object):
+    def __init__(self, name, members, attribs):
+        self.name = name
+        self.members = members
+        self.attribs = attribs
+
+    def __str__(self):
+        return 'Struct({})'.format(self.name)
+
+    def __repr__(self):
+        return self.__str__()
+
+class StructMember(object):
+    def __init__(self, name, type_, span, attribs):
+        self.name = name
+        self.type_ = type_
+        if span < 1:
+            raise ValueError("Span of type must be greater than or equal to 1, instead received {}".format(
+                span))
+        self.span = span
+        self.attribs = attribs
 
 
 class TokenType(object):
@@ -17,15 +60,13 @@ class TokenType(object):
     IDENT = 9
     STRING = 10
     KWENUM = 11
-    KWBITS = 12
-    KWBYTES = 13
-    COLON = 14
-    EQUALS = 15
-    UNK = 16
-    WHITESPACE = 17
-    SQUOTE = 18
-    EOF = 19
-    KWSTRUCT = 20
+    KWSTRUCT = 12
+    COLON = 13
+    EQUALS = 14
+    UNK = 15
+    WHITESPACE = 16
+    CHARACTER = 17 # character surrounded by single quote
+    EOF = 18
 
     @staticmethod
     def tostr(t):
@@ -53,18 +94,14 @@ class TokenType(object):
             return 'string'
         elif t == TokenType.KWENUM:
             return 'enum'
-        elif t == TokenType.KWBITS:
-            return 'bits'
-        elif t == TokenType.KWBYTES:
-            return 'bytes'
         elif t == TokenType.COLON:
             return ':'
         elif t == TokenType.EQUALS:
             return '='
         elif t == TokenType.WHITESPACE:
             return 'whitespace'
-        elif t == TokenType.SQUOTE:
-            return "'"
+        elif t == TokenType.CHARACTER:
+            return "character"
         elif t == TokenType.EOF:
             return 'EOF'
         elif t == TokenType.KWSTRUCT:
@@ -73,9 +110,10 @@ class TokenType(object):
             raise Exception('Unknown type: {}'.format(t))
 
 class Token(object):
-    def __init__(self, type_, value):
+    def __init__(self, type_, value, linum):
         self.type_ = type_
         self.value = value
+        self.linum = linum
 
     def __str__(self):
         return 'Token({typ}) = "{val}"'.format(
@@ -85,44 +123,62 @@ class Token(object):
 def _tokenize(stream):
     size = len(stream)
     i = 0
+    linum = 1
     while 1:
         while i < size and stream[i].isspace():
+            if stream[i] == '\n':
+                linum += 1
             i += 1
         if not (i < size):
             break
         c = stream[i]
         i += 1
         if c == '(':
-            yield Token(TokenType.LPAREN, '(')
+            yield Token(TokenType.LPAREN, '(', linum)
         elif c == ')':
-            yield Token(TokenType.RPAREN, ')')
+            yield Token(TokenType.RPAREN, ')', linum)
         elif c == '[':
-            yield Token(TokenType.LBRACKET, '[')
+            yield Token(TokenType.LBRACKET, '[', linum)
         elif c == ']':
-            yield Token(TokenType.RBRACKET, ']')
+            yield Token(TokenType.RBRACKET, ']', linum)
         elif c == '{':
-            yield Token(TokenType.LBRACE, '{')
+            yield Token(TokenType.LBRACE, '{', linum)
         elif c == '}':
-            yield Token(TokenType.RBRACE, '}')
+            yield Token(TokenType.RBRACE, '}', linum)
         elif c == ':':
-            yield Token(TokenType.COLON, ':')
+            yield Token(TokenType.COLON, ':', linum)
         elif c == ',':
-            yield Token(TokenType.COMMA, ',')
+            yield Token(TokenType.COMMA, ',', linum)
         elif c == '=':
-            yield Token(TokenType.EQUALS, '=')
+            yield Token(TokenType.EQUALS, '=', linum)
         elif c == "'":
-            yield Token(TokenType.SQUOTE, "'")
+            val = ''
+            while i < size and stream[i] != "'" and stream[i] != '\n':
+                val += stream[i]
+                i += 1
+            if len(val) != 1 or stream[i] == '\n':
+                raise Exception("Expected value between single quotes to be single character")
+            i += 1
+            yield Token(TokenType.CHARACTER, val, linum)
         elif c == ';':
-            yield Token(TokenType.SEMICOLON, ';')
+            yield Token(TokenType.SEMICOLON, ';', linum)
         elif c == '"':
             val = c
-            while i < size and stream[i] != '"':
-                c += stream[i]
+            while i < size and stream[i] != '"' and stream[i] != '\n':
+                val += stream[i]
                 i += 1
-            if i >= size:
+            if i >= size or stream[i] == '\n':
                 raise Exception('''Unmatched '"' character''')
             i += 1
-            yield Token(TokenType.STRING, val)
+            yield Token(TokenType.STRING, val, linum)
+        elif c.isdigit():
+            val = c
+            while i < size and stream[i].isdigit():
+                val += stream[i]
+                i += 1
+#            if i < size:
+#                i += 1
+            yield Token(TokenType.INTEGER, val, linum)
         else:
             val = c
             while i < size:
@@ -132,15 +188,11 @@ def _tokenize(stream):
                 val += c
                 i += 1
             if val == 'enum':
-                yield Token(TokenType.KWENUM, val)
-            elif val == 'bits':
-                yield Token(TokenType.KWBITS, val)
-            elif val == 'bytes':
-                yield Token(TokenType.KWBYTES, val)
+                yield Token(TokenType.KWENUM, val, linum)
             elif val == 'struct':
-                yield Token(TokenType.KWSTRUCT, val)
+                yield Token(TokenType.KWSTRUCT, val, linum)
             else:
-                yield Token(TokenType.IDENT, val)
+                yield Token(TokenType.IDENT, val, linum)
 
 
 class Lexer(object):
@@ -152,7 +204,7 @@ class Lexer(object):
         try:
             self.cur = self.tokenizer.next()
         except StopIteration:
-            self.cur = Token(TokenType.EOF, '')
+            self.cur = Token(TokenType.EOF, '', 0)
         return self.cur
 
     def peek(self):
@@ -160,8 +212,13 @@ class Lexer(object):
 
     def expect(self, type_):
         if self.cur.type_ != type_:
-            raise Exception('SyntaxError: expected {} token'.format(
-                TokenType.tostr(type_)))
+            raise Exception('SyntaxError({}): expected {} token, instead received {} = "{}"'.format(
+                self.cur.linum,
+                TokenType.tostr(type_),
+                TokenType.tostr(self.cur.type_),
+                self.cur.value))
+        else:
+            self.next()
 
     def accept(self, type_):
         if self.cur.type_ == type_:
@@ -172,20 +229,22 @@ class Lexer(object):
 
 
 def parse(lexer):
+    enums = []
+    structs = []
     while not lexer.accept(TokenType.EOF):
         if lexer.accept(TokenType.KWENUM):
-            parse_enum(lexer)
+            enum = parse_enum(lexer)
+            enums.append(enum)
         elif lexer.accept(TokenType.KWSTRUCT):
-            print("struct")
-        lexer.next()
-#        else:
-#            lexer.next()
-#            raise Exception('Unexpected token type {}'.format(
-#                TokenType.tostr(lexer.peek().type_)))
+            struct = parse_struct(lexer)
+            pprint.pprint(struct)
+            structs.append(struct)
+        else:
+            raise Exception('Unexpected token type {}'.format(
+                TokenType.tostr(lexer.peek().type_)))
+    return enums, structs
 
-def parse_enum(lexer):
-    name = lexer.peek().value
-    lexer.expect(TokenType.IDENT)
+def parse_attributes(lexer):
     attribs = {}
     if lexer.accept(TokenType.LPAREN):
         while not lexer.accept(TokenType.RPAREN):
@@ -195,14 +254,71 @@ def parse_enum(lexer):
             val = lexer.peek().value
             if lexer.accept(TokenType.INTEGER):
                 val = int(val)
+            elif lexer.accept(TokenType.CHARACTER):
+                val = "'{}'".format(val)
             elif not lexer.accept(TokenType.STRING):
-                raise Exception('Expected integer or string value in attributes list')
+                raise Exception('Expected integer or string value in attributes list, instead received {} = "{}"'.format(
+                    TokenType.tostr(lexer.peek().type_), lexer.peek().value))
             attribs[key] = val
+            if lexer.accept(TokenType.COMMA):
+                continue
+    return attribs
 
+def parse_struct(lexer):
+    name = lexer.peek().value
+    lexer.expect(TokenType.IDENT)
+    attribs = parse_attributes(lexer)
+    lexer.expect(TokenType.LBRACE)
+    members = [m for m in parse_struct_member(lexer)]
+    return Struct(name=name, members=members, attribs=attribs)
+
+
+def parse_struct_member(lexer):
+    while not lexer.accept(TokenType.RBRACE):
+        name = lexer.peek().value
+        lexer.expect(TokenType.IDENT)
+        lexer.expect(TokenType.COLON)
+        type_ = lexer.peek().value
+        lexer.expect(TokenType.IDENT)
+        span = 1
+        if lexer.accept(TokenType.LBRACKET):
+            span = lexer.peek().value
+            lexer.expect(TokenType.INTEGER)
+            span = int(span)
+            lexer.expect(TokenType.RBRACKET)
+        attribs = parse_attributes(lexer)
+        yield StructMember(name=name, type_=type_, span=span, attribs=attribs)
+        if not lexer.accept(TokenType.SEMICOLON):
+            break
+
+
+def parse_enum(lexer):
+    name = lexer.peek().value
+    lexer.expect(TokenType.IDENT)
+    attribs = parse_attributes(lexer)
     print("Parsed attributes: {}".format(str(attribs)))
     lexer.expect(TokenType.LBRACE)
+    members = [m for m in parse_enum_member(lexer)]
+    if not members:
+        raise Exception('Enum type "{}" has no members!'.format(name))
+    return Enum(name=name, members=members, attribs=attribs)
 
 
+def parse_enum_member(lexer):
+    while not lexer.accept(TokenType.RBRACE):
+        name = lexer.peek().value
+        lexer.expect(TokenType.IDENT)
+        lexer.expect(TokenType.EQUALS)
+        val = lexer.peek().value
+        if lexer.accept(TokenType.CHARACTER):
+            value = "'{}'".format(val)
+        elif lexer.accept(TokenType.INTEGER):
+            value = int(val)
+        else:
+            raise Exception("Expected character or integer value for enum value")
+        if not lexer.accept(TokenType.COMMA):
+            break
+        yield EnumValue(name=name, value=value)
 
 
 if __name__ == '__main__':

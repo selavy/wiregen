@@ -1,4 +1,4 @@
-enum itch5x_msg_type (bits=8, endian=little) {
+enum itch5x_msg_type (bits=8, endian="little") {
     ITCH5x_MT_SYSTEM_EVENT_MESSAGE      = 'S',
     ITCH5x_MT_STOCK_DIRECTORY           = 'R',
     ITCH5x_MT_STOCK_TRADING_ACTION      = 'H',
