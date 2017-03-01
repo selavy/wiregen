@@ -30,6 +30,7 @@ class Enum(object):
         self.name = name
         self.members = members
         self.attribs = attribs
+        self.signed = False
 
         width = 0
         for m in members:
@@ -68,6 +69,7 @@ class Struct(object):
         self.name = name
         self.members = members
         self.attribs = attribs
+        self.signed = False
 
     def __str__(self):
         return 'Struct({})'.format(self.name)
@@ -378,6 +380,10 @@ def generate_enum(enum):
                 name=enum.name, width=enum.width)
 
 
+def generate_struct(struct, enums, basics):
+    yield 'struct {name} {{'.format(name=struct.name)
+    yield '};'
+
 if __name__ == '__main__':
     with open('itch5x.idl') as f:
         lines = f.readlines()
@@ -401,8 +407,8 @@ if __name__ == '__main__':
             print(line)
         print()
 
-#    for struct in structs:
-#        for line in generate_struct(struct, enums=enums, basics=basics):
-#            print(line)
-#        print()
+    for struct in structs:
+        for line in generate_struct(struct, enums=enums, basics=basics):
+            print(line)
+        print()
 #
