@@ -41,7 +41,6 @@ class Enum(object):
             elif not isinstance(value, int):
                 raise Exception("Invalid enum value: {}".format(value))
             w = required_bits(value)
-            #print("Calculated width = {}".format(w))
             if w > width:
                 width = w
             if 'bits' in attribs:
@@ -50,7 +49,7 @@ class Enum(object):
                     raise Exception('Enum {} requires {} bits, but specified width is {} bits'.format(
                         self.name, width, bits))
                 self.width = bits
-                self.aligned = False
+                self.aligned = bits % 8 == 0
             elif 'bytes' in attribs:
                 bytes_ = attribs['bytes']
                 reqbytes = width / 8.
@@ -62,8 +61,6 @@ class Enum(object):
             else:
                 self.width = next_power_of_two(width)
                 self.aligned = True
-        #print("Calculated width = {}, aligned = {}".format(
-        #    self.width, self.aligned))
 
 
 class Struct(object):
