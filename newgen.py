@@ -37,6 +37,13 @@ class Struct(object):
         return self.__str__()
 
 
+class BasicType(object):
+    def __init__(self, name, width, signed):
+        self.name = name
+        self.width = width
+        self.signed = signed
+
+
 class StructMember(object):
     def __init__(self, name, type_, span, attribs):
         self.name = name
@@ -333,9 +340,22 @@ if __name__ == '__main__':
     lexer = Lexer(lines)
     enums, structs = parse(lexer)
 
+    basics = {}
+    basics['u8' ] = BasicType(name='u8' , width=8 , signed=False)
+    basics['u16'] = BasicType(name='u16', width=16, signed=False)
+    basics['u32'] = BasicType(name='u32', width=32, signed=False)
+    basics['u64'] = BasicType(name='u64', width=64, signed=False)
+
+    basics['s8' ] = BasicType(name='s8' , width=8 , signed=True)
+    basics['s16'] = BasicType(name='s16', width=16, signed=True)
+    basics['s32'] = BasicType(name='s32', width=32, signed=True)
+    basics['s64'] = BasicType(name='s64', width=64, signed=True)
+
     for enum in enums:
         for line in generate_enum(enum):
             print(line)
         print()
+
+
 
 
