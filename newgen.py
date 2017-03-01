@@ -3,6 +3,10 @@
 from __future__ import print_function
 import sys
 import pprint
+import math
+
+def required_bits(value):
+    return math.ceil(math.log(value, 2))
 
 
 class EnumValue(object):
@@ -22,6 +26,39 @@ class Enum(object):
         self.name = name
         self.members = members
         self.attribs = attribs
+
+        width = 0
+        for m in members:
+            value = m.value
+            if isinstance(value, str):
+                if len(value) != 3:
+                    raise Exception("Invalid enum value: {}".format(value))
+                value = ord(value[1])
+            elif not isinstance(value, int):
+                raise Exception("Invalid enum value: {}".format(value))
+            w = required_bits(value)
+            #print("Calculated width = {}".format(w))
+            if w > width:
+                width = w
+            if 'bits' in attribs:
+                bits = attribs['bits']
+                if width > bits:
+                    raise Exception('Enum {} requires {} bits, but specified width is {} bits'.format(
+                        self.name, width, bits))
+                self.size = bits
+                self.aligned = False
+            elif 'bytes' in attribs:
+                bytes_ = attribs['bytes']
+                reqbytes = width / 8.
+                if reqbytes > bytes_:
+                    raise Exception('Enum {} requires {} bytes, but specified width is {} bytes'.format(
+                        self.name, reqbytes, bytes_))
+                self.size = bytes_ * 8
+                self.aligned = True
+            else:
+                self.size = width
+                self.aligned = width % 8 == 0
+        #print("Calculated width = {}, aligned = {}".format(self.size, self.aligned))
 
 
 class Struct(object):
@@ -333,6 +370,7 @@ def generate_enum(enum):
         yield '    {name} = {value},'.format(name=m.name, value=m.value)
     yield '};'
 
+
 if __name__ == '__main__':
     with open('itch5x.idl') as f:
         lines = f.readlines()
@@ -351,11 +389,15 @@ if __name__ == '__main__':
     basics['s32'] = BasicType(name='s32', width=32, signed=True)
     basics['s64'] = BasicType(name='s64', width=64, signed=True)
 
+    enum_sizes = {}
     for enum in enums:
+        enum_sizes[enum.name] = enum.size
         for line in generate_enum(enum):
             print(line)
         print()
 
-
-
-
+#    for struct in structs:
+#        for line in generate_struct(struct, enums=enums, basics=basics):
+#            print(line)
+#        print()
+#
