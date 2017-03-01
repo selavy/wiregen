@@ -291,6 +291,7 @@ def parse(lexer):
                 TokenType.tostr(lexer.peek().type_)))
     return enums, structs
 
+
 def parse_attributes(lexer):
     attribs = {}
     if lexer.accept(TokenType.LPAREN):
@@ -310,6 +311,7 @@ def parse_attributes(lexer):
             if lexer.accept(TokenType.COMMA):
                 continue
     return attribs
+
 
 def parse_struct(lexer):
     name = lexer.peek().value
@@ -382,6 +384,19 @@ def generate_enum(enum):
 
 def generate_struct(struct, enums, basics):
     yield 'struct {name} {{'.format(name=struct.name)
+    for m in struct.members:
+        if m.name in basics:
+            basic = basics[m.name]
+            if basic.signed:
+                typedecl = 'int{width}_t'.format(width=basic.width)
+            else:
+                typedecl = 'uint{width}_t'.format(width=basic.width)
+            if m.span > 1:
+                span = '[{span}]'.format(span=m.span)
+            else:
+                span = ''
+            yield '{typedecl} {name}{span};'.format(
+                    typedecl=typedecl, name=m.name, span=span)
     yield '};'
 
 if __name__ == '__main__':
