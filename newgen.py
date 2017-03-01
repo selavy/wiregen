@@ -9,6 +9,10 @@ def required_bits(value):
     return math.ceil(math.log(value, 2))
 
 
+def next_power_of_two(value):
+    return 1 << (x-1).bit_length()
+
+
 class EnumValue(object):
     def __init__(self, name, value):
         self.name = name
@@ -45,7 +49,7 @@ class Enum(object):
                 if width > bits:
                     raise Exception('Enum {} requires {} bits, but specified width is {} bits'.format(
                         self.name, width, bits))
-                self.size = bits
+                self.width = bits
                 self.aligned = False
             elif 'bytes' in attribs:
                 bytes_ = attribs['bytes']
@@ -53,12 +57,13 @@ class Enum(object):
                 if reqbytes > bytes_:
                     raise Exception('Enum {} requires {} bytes, but specified width is {} bytes'.format(
                         self.name, reqbytes, bytes_))
-                self.size = bytes_ * 8
+                self.width = bytes_ * 8
                 self.aligned = True
             else:
-                self.size = width
-                self.aligned = width % 8 == 0
-        #print("Calculated width = {}, aligned = {}".format(self.size, self.aligned))
+                self.width = next_power_of_two(width)
+                self.aligned = True
+        #print("Calculated width = {}, aligned = {}".format(
+        #    self.width, self.aligned))
 
 
 class Struct(object):
@@ -369,6 +374,11 @@ def generate_enum(enum):
     for m in enum.members:
         yield '    {name} = {value},'.format(name=m.name, value=m.value)
     yield '};'
+    yield '// size = {width}'.format(width=enum.width)
+    yield '// aligned = {aligned}'.format(aligned=enum.aligned)
+    if enum.aligned:
+        yield 'static_assert(sizeof({name}) <= {width});'.format(
+                name=enum.name, width=enum.width)
 
 
 if __name__ == '__main__':
@@ -389,9 +399,7 @@ if __name__ == '__main__':
     basics['s32'] = BasicType(name='s32', width=32, signed=True)
     basics['s64'] = BasicType(name='s64', width=64, signed=True)
 
-    enum_sizes = {}
     for enum in enums:
-        enum_sizes[enum.name] = enum.size
         for line in generate_enum(enum):
             print(line)
         print()
