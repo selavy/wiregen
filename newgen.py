@@ -36,6 +36,7 @@ class Struct(object):
     def __repr__(self):
         return self.__str__()
 
+
 class StructMember(object):
     def __init__(self, name, type_, span, attribs):
         self.name = name
@@ -176,8 +177,6 @@ def _tokenize(stream):
             while i < size and stream[i].isdigit():
                 val += stream[i]
                 i += 1
-#            if i < size:
-#                i += 1
             yield Token(TokenType.INTEGER, val, linum)
         else:
             val = c
@@ -321,12 +320,22 @@ def parse_enum_member(lexer):
         yield EnumValue(name=name, value=value)
 
 
+def generate_enum(enum):
+    yield 'enum {name} {{'.format(name=enum.name)
+    for m in enum.members:
+        yield '    {name} = {value},'.format(name=m.name, value=m.value)
+    yield '};'
+
 if __name__ == '__main__':
     with open('itch5x.idl') as f:
         lines = f.readlines()
     lines = '\n'.join(lines)
     lexer = Lexer(lines)
-    parse(lexer)
-#    for token in _tokenize(lines):
-#        print(token)
+    enums, structs = parse(lexer)
+
+    for enum in enums:
+        for line in generate_enum(enum):
+            print(line)
+        print()
+
 
