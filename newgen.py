@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 from collections import namedtuple
+import math
 
 StructMember = namedtuple(
         'StructMember', [
@@ -19,6 +20,19 @@ Struct = namedtuple(
             'display_name',
             'members',
             ])
+
+EnumMember = namedtuple(
+        'EnumMember', [
+            'display_name',
+            'value',
+            ])
+
+Enum = namedtuple(
+        'Enum', [
+            'display_name',
+            'members',
+            ])
+
 
 def generate_struct_member(member):
     if member.compound_type:
@@ -51,7 +65,47 @@ def generate_struct(struct):
     yield '} __attribute__((packed));'
     if width % 8 == 0:
         yield 'static_assert(sizeof(struct {name}) == {width});'.format(
-                name=struct.display_name, width=width/8)
+                name=struct.display_name, width=width//8)
+
+
+def generate_enum_member(member):
+    if isinstance(member.value, str):
+        if len(member.value) != 1:
+            raise ValueError('Enum values must be single character or int!')
+        yield "    {name} = '{value}',".format(
+                name=member.display_name, value=member.value)
+    else:
+        yield '    {name} = {value},'.format(
+                name=member.display_name, value=member.value)
+
+
+def required_bits(value):
+    if isinstance(value, str):
+        value = ord(value)
+    if not isinstance(value, int):
+        raise ValueError("Value must be int or char")
+    return int(math.ceil(math.log(value, 2)))
+
+
+def next_power_of_two(x):
+    return 1 << (x-1).bit_length()
+
+
+def generate_enum(enum):
+    yield 'enum {name} {{'.format(name=enum.display_name)
+    bits = 0
+    for member in enum.members:
+        for line in generate_enum_member(member):
+            yield line
+        rbits = required_bits(member.value)
+        if rbits > bits:
+            bits = rbits
+    yield '};'
+    bits = next_power_of_two(bits)
+    assert bits % 8 == 0
+    byts = bits / 8
+    yield 'static_assert(sizeof(enum {name}) == {byts});'.format(
+            name=enum.display_name, byts=byts)
 
 
 if __name__ == '__main__':
@@ -91,7 +145,36 @@ if __name__ == '__main__':
             ]
     struct = Struct(display_name='HelloWorld', members=members)
 
+
+    emembers = [
+        EnumMember(display_name='ITCH5x_MT_SYSTEM_EVENT_MESSAGE', value='S'),
+        EnumMember(display_name='ITCH5x_MT_STOCK_DIRECTORY', value='R'),
+        EnumMember(display_name='ITCH5x_MT_STOCK_TRADING_ACTION', value='H'),
+        EnumMember(display_name='ITCH5x_MT_REG_SHO_INDICATOR', value='Y'),
+        EnumMember(display_name='ITCH5x_MT_MKT_PARTICIPANT_POSITION', value='L'),
+        EnumMember(display_name='ITCH5x_MT_MWCB_LEVEL_DECLINE', value='V'),
+        EnumMember(display_name='ITCH5x_MT_MWCB_STATUS', value='W'),
+        EnumMember(display_name='ITCH5x_MT_IPO_QUOTING_PERIOD_UPDATE', value='K'),
+        EnumMember(display_name='ITCH5x_MT_ADD_ORDER', value='A'),
+        EnumMember(display_name='ITCH5x_MT_ADD_ORDER_ATTRIBUTED', value='F'),
+        EnumMember(display_name='ITCH5x_MT_ORDER_EXECUTED', value='E'),
+        EnumMember(display_name='ITCH5x_MT_ORDER_EXECUTED_WITH_PRICE', value='C'),
+        EnumMember(display_name='ITCH5x_MT_ORDER_CANCEL', value='X'),
+        EnumMember(display_name='ITCH5x_MT_ORDER_DELETE', value='D'),
+        EnumMember(display_name='ITCH5x_MT_ORDER_REPLACE', value='U'),
+        EnumMember(display_name='ITCH5x_MT_TRADE', value='P'),
+        EnumMember(display_name='ITCH5x_MT_CROSS_TRADE', value='Q'),
+        EnumMember(display_name='ITCH5x_MT_BROKEN_TRADE', value='B'),
+        EnumMember(display_name='ITCH5x_MT_NOII', value='I'),
+        EnumMember(display_name='ITCH5x_MT_RPII', value='N'),
+    ]
+    enum = Enum(display_name='itch5x_msg_type', members=emembers)
+
     for line in generate_struct(struct):
+        print(line)
+    print()
+
+    for line in generate_enum(enum):
         print(line)
     print()
 
