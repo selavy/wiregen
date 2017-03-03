@@ -17,7 +17,7 @@ StructMember = namedtuple(
 Struct = namedtuple(
         'Struct', [
             'display_name',
-            'members'
+            'members',
             ])
 
 def generate_struct_member(member):
@@ -42,9 +42,16 @@ def generate_struct_member(member):
 
 
 def generate_struct(struct):
+    yield 'struct {name} {{'.format(name=struct.display_name)
+    width = 0
     for member in struct.members:
         for line in generate_struct_member(member):
             yield line
+        width += member.bit_width * member.span
+    yield '} __attribute__((packed));'
+    if width % 8 == 0:
+        yield 'static_assert(sizeof(struct {name}) == {width});'.format(
+                name=struct.display_name, width=width/8)
 
 
 if __name__ == '__main__':
