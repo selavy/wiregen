@@ -385,8 +385,9 @@ def generate_enum(enum):
 def generate_struct(struct, enums, basics):
     yield 'struct {name} {{'.format(name=struct.name)
     for m in struct.members:
-        if m.name in basics:
-            basic = basics[m.name]
+        typename = m.type_
+        if typename in basics:
+            basic = basics[typename]
             if basic.signed:
                 typedecl = 'int{width}_t'.format(width=basic.width)
             else:
@@ -397,7 +398,9 @@ def generate_struct(struct, enums, basics):
                 span = ''
             yield '{typedecl} {name}{span};'.format(
                     typedecl=typedecl, name=m.name, span=span)
-    yield '};'
+        else:
+            print("unable to find type '{}'".format(typename))
+    yield '} __attribute__((packed));'
 
 if __name__ == '__main__':
     with open('itch5x.idl') as f:
