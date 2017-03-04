@@ -170,6 +170,7 @@ if __name__ == '__main__':
     print('#pragma once')
     print()
     print('#include <stdint.h>')
+    print('#include <byteswap.h>')
     print()
     print('/* Generate file.  Do not edit by hand */')
     print()
