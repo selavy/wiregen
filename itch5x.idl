@@ -1,4 +1,3 @@
-
 enum itch5x_message_type {
     ITCH5X_MT_SYSTEM_EVENT             = 'S',
     ITCH5X_MT_STOCK_DIRECTORY          = 'R',
@@ -22,7 +21,7 @@ enum itch5x_message_type {
     ITCH5X_MT_RPII                     = 'N',
 }
 
-struct itch5x_add_order [bigendian] [bytes=36] {
+struct itch5x_add_order [bytes=36] {
     u8    message_type;
     u16   stock_locate;
     u16   tracking_number;

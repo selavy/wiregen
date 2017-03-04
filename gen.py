@@ -4,11 +4,18 @@ from __future__ import print_function
 from collections import namedtuple
 import math
 
+# Future support ideas:
+#   +namespace "itch5x", prepends "itch5x_" to every type
+#   +compound types within other compound types
+#   +debug pretty printer?
+#   +bitfields
+#   +string field accessors (null vs space padded)
+
 # Types
 EnumMember = namedtuple('EnumMember', ['name', 'value'])
 Enum = namedtuple('Enum', ['name', 'members', 'width'])
 StructMember = namedtuple('StructMember',
-        ['name', 'btype', 'span', 'bigendian'])
+        ['name', 'btype', 'span'])
 Struct = namedtuple('Struct',
         ['name', 'width', 'span', 'members'])
 Type = namedtuple('Type', ['width', 'ctype', 'span'])
@@ -149,15 +156,15 @@ if __name__ == '__main__':
 
 
     smembers = [
-            StructMember(name='message_type'          , btype='u8' , span=1, bigendian=True),
-            StructMember(name='stock_locate'          , btype='u16' , span=1, bigendian=True),
-            StructMember(name='tracking_number'       , btype='u16', span=1, bigendian=True),
-            StructMember(name='timestamp'             , btype='u48', span=1, bigendian=True),
-            StructMember(name='order_reference_number', btype='u64', span=1, bigendian=True),
-            StructMember(name='side'                  , btype='u8' , span=1, bigendian=True),
-            StructMember(name='shares'                , btype='u32', span=1, bigendian=True),
-            StructMember(name='stock'                 , btype='u8' , span=8, bigendian=True),
-            StructMember(name='price'                 , btype='u32', span=1, bigendian=True),
+            StructMember(name='message_type'          , btype='u8' , span=1),
+            StructMember(name='stock_locate'          , btype='u16', span=1),
+            StructMember(name='tracking_number'       , btype='u16', span=1),
+            StructMember(name='timestamp'             , btype='u48', span=1),
+            StructMember(name='order_reference_number', btype='u64', span=1),
+            StructMember(name='side'                  , btype='u8' , span=1),
+            StructMember(name='shares'                , btype='u32', span=1),
+            StructMember(name='stock'                 , btype='u8' , span=8),
+            StructMember(name='price'                 , btype='u32', span=1),
             ]
     struct = Struct(name='itch5x_add_order',
             width=36*8,
