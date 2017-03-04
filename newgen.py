@@ -25,6 +25,7 @@ EnumMember = namedtuple(
         'EnumMember', [
             'display_name',
             'value',
+            'bit_width',
             ])
 
 Enum = namedtuple(
@@ -143,26 +144,26 @@ if __name__ == '__main__':
 
 
     emembers = [
-        EnumMember(display_name='ITCH5x_MT_SYSTEM_EVENT_MESSAGE', value='S'),
-        EnumMember(display_name='ITCH5x_MT_STOCK_DIRECTORY', value='R'),
-        EnumMember(display_name='ITCH5x_MT_STOCK_TRADING_ACTION', value='H'),
-        EnumMember(display_name='ITCH5x_MT_REG_SHO_INDICATOR', value='Y'),
-        EnumMember(display_name='ITCH5x_MT_MKT_PARTICIPANT_POSITION', value='L'),
-        EnumMember(display_name='ITCH5x_MT_MWCB_LEVEL_DECLINE', value='V'),
-        EnumMember(display_name='ITCH5x_MT_MWCB_STATUS', value='W'),
-        EnumMember(display_name='ITCH5x_MT_IPO_QUOTING_PERIOD_UPDATE', value='K'),
-        EnumMember(display_name='ITCH5x_MT_ADD_ORDER', value='A'),
-        EnumMember(display_name='ITCH5x_MT_ADD_ORDER_ATTRIBUTED', value='F'),
-        EnumMember(display_name='ITCH5x_MT_ORDER_EXECUTED', value='E'),
-        EnumMember(display_name='ITCH5x_MT_ORDER_EXECUTED_WITH_PRICE', value='C'),
-        EnumMember(display_name='ITCH5x_MT_ORDER_CANCEL', value='X'),
-        EnumMember(display_name='ITCH5x_MT_ORDER_DELETE', value='D'),
-        EnumMember(display_name='ITCH5x_MT_ORDER_REPLACE', value='U'),
-        EnumMember(display_name='ITCH5x_MT_TRADE', value='P'),
-        EnumMember(display_name='ITCH5x_MT_CROSS_TRADE', value='Q'),
-        EnumMember(display_name='ITCH5x_MT_BROKEN_TRADE', value='B'),
-        EnumMember(display_name='ITCH5x_MT_NOII', value='I'),
-        EnumMember(display_name='ITCH5x_MT_RPII', value='N'),
+        EnumMember(display_name='ITCH5x_MT_SYSTEM_EVENT_MESSAGE', value='S', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_STOCK_DIRECTORY', value='R', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_STOCK_TRADING_ACTION', value='H', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_REG_SHO_INDICATOR', value='Y', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_MKT_PARTICIPANT_POSITION', value='L', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_MWCB_LEVEL_DECLINE', value='V', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_MWCB_STATUS', value='W', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_IPO_QUOTING_PERIOD_UPDATE', value='K', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_ADD_ORDER', value='A', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_ADD_ORDER_ATTRIBUTED', value='F', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_ORDER_EXECUTED', value='E', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_ORDER_EXECUTED_WITH_PRICE', value='C', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_ORDER_CANCEL', value='X', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_ORDER_DELETE', value='D', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_ORDER_REPLACE', value='U', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_TRADE', value='P', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_CROSS_TRADE', value='Q', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_BROKEN_TRADE', value='B', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_NOII', value='I', bit_width=7),
+        EnumMember(display_name='ITCH5x_MT_RPII', value='N', bit_width=7),
     ]
     enum = Enum(display_name='itch5x_msg_type', members=emembers, bit_width=8)
 
