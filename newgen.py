@@ -31,6 +31,7 @@ Enum = namedtuple(
         'Enum', [
             'display_name',
             'members',
+            'bit_width',
             ])
 
 
@@ -101,11 +102,14 @@ def generate_enum(enum):
         if rbits > bits:
             bits = rbits
     yield '};'
-    bits = next_power_of_two(bits)
-    assert bits % 8 == 0
-    byts = bits / 8
-    yield '_Static_assert(sizeof(enum {name}) == {byts}, "Width of {name} incorrect");'.format(
-            name=enum.display_name, byts=byts)
+    if bits > enum.bit_width:
+        raise Exception("Not enough bits to encode enum {name}".format(
+            name=enum.display_name))
+    #bits = next_power_of_two(bits)
+    #assert bits % 8 == 0
+    #byts = bits / 8
+    #yield '_Static_assert(sizeof(enum {name}) == {byts}, "Width of {name} incorrect");'.format(
+    #        name=enum.display_name, byts=byts)
 
 
 if __name__ == '__main__':
@@ -160,10 +164,13 @@ if __name__ == '__main__':
         EnumMember(display_name='ITCH5x_MT_NOII', value='I'),
         EnumMember(display_name='ITCH5x_MT_RPII', value='N'),
     ]
-    enum = Enum(display_name='itch5x_msg_type', members=emembers)
+    enum = Enum(display_name='itch5x_msg_type', members=emembers, bit_width=8)
 
     print('#pragma once')
+    print()
     print('#include <stdint.h>')
+    print()
+    print('/* Generate file.  Do not edit by hand */')
     print()
 
     for line in generate_struct(struct):
