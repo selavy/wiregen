@@ -64,7 +64,7 @@ def generate_struct(struct):
         width += member.bit_width * member.span
     yield '} __attribute__((packed));'
     if width % 8 == 0:
-        yield 'static_assert(sizeof(struct {name}) == {width});'.format(
+        yield '_Static_assert(sizeof(struct {name}) == {width}, "Width of {name} incorrect");'.format(
                 name=struct.display_name, width=width//8)
 
 
@@ -104,7 +104,7 @@ def generate_enum(enum):
     bits = next_power_of_two(bits)
     assert bits % 8 == 0
     byts = bits / 8
-    yield 'static_assert(sizeof(enum {name}) == {byts});'.format(
+    yield '_Static_assert(sizeof(enum {name}) == {byts}, "Width of {name} incorrect");'.format(
             name=enum.display_name, byts=byts)
 
 
@@ -134,14 +134,6 @@ if __name__ == '__main__':
                 little_endian=True,
                 byte_aligned=True,
                 compound_type=None),
-            StructMember(
-                display_name='testrstructer',
-                bit_width=64,
-                span=6,
-                signed=False,
-                little_endian=True,
-                byte_aligned=True,
-                compound_type='test_t'),
             ]
     struct = Struct(display_name='HelloWorld', members=members)
 
@@ -169,6 +161,10 @@ if __name__ == '__main__':
         EnumMember(display_name='ITCH5x_MT_RPII', value='N'),
     ]
     enum = Enum(display_name='itch5x_msg_type', members=emembers)
+
+    print('#pragma once')
+    print('#include <stdint.h>')
+    print()
 
     for line in generate_struct(struct):
         print(line)
