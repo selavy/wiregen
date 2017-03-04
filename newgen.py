@@ -69,6 +69,23 @@ def generate_struct(struct):
         yield '_Static_assert(sizeof(struct {name}) == {width}, "Width of {name} incorrect");'.format(
                 name=struct.display_name, width=width//8)
 
+def generate_swap_routine(struct):
+    yield 'void bswap_{name}(struct {name} *restrict val) {{'.format(
+            name=struct.display_name)
+    for member in struct.members:
+        if member.bit_width == 8:
+            continue
+        elif member.bit_width == 16:
+            yield '    val->{m} = bswap_16(val->{m});'.format(
+                    m=member.display_name)
+        elif member.bit_width == 32:
+            yield '    val->{m} = bswap_32(val->{m});'.format(
+                    m=member.display_name)
+        elif member.bit_width == 64:
+            yield '    val->{m} = bswap_64(val->{m});'.format(
+                    m=member.display_name)
+    yield '}'
+
 
 def generate_enum_member(member):
     if isinstance(member.value, str):
@@ -176,6 +193,9 @@ if __name__ == '__main__':
     print()
 
     for line in generate_struct(struct):
+        print(line)
+    print()
+    for line in generate_swap_routine(struct):
         print(line)
     print()
 
