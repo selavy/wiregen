@@ -16,6 +16,7 @@ Type = namedtuple('Type', ['width', 'ctype', 'span'])
 
 # Globals
 TYPES = {} # str -> Type
+SWAPPERS = {} # str -> str, if not in map then don't need to swap
 
 
 # Functions
@@ -33,6 +34,27 @@ def generate_enum(enum):
             name=enum.name, rbytes=rbytes)
     yield '        "Not enough bits to encode enum {name}");'.format(
             name=enum.name)
+
+
+def generate_bswapper(struct):
+    yield '__attribute__((always_inline)) inline'
+    yield 'void bswap_{name}(struct {name} *restrict val) {{'.format(
+            name=struct.name)
+    for m in struct.members:
+        try:
+            swapper = SWAPPERS[m.btype]
+        except KeyError:
+            continue
+        # HACK(plesslie): probably should make this a tuple with
+        # Boolean for inplace or not
+        inplace = 'inplace' in swapper
+        if inplace:
+            yield '    {swapper}(val->{member});'.format(
+                    swapper=swapper, member=m.name)
+        else:
+            yield '    val->{member} = {swapper}(val->{member});'.format(
+                    swapper=swapper, member=m.name)
+    yield '}'
 
 
 def generate_struct_member(m):
@@ -57,6 +79,9 @@ def generate_struct(struct):
             name=struct.name, width=rbytes)
     yield '        "Incorrect size for struct {name}");'.format(
             name=struct.name)
+    yield ''
+    for line in generate_bswapper(struct):
+        yield line
 
 
 if __name__ == '__main__':
@@ -72,6 +97,17 @@ if __name__ == '__main__':
     TYPES['s64'] = Type(width=64, ctype='uint64_t', span=1)
 
     TYPES['u48']  = Type(width=48 , ctype='uint8_t' , span=6)
+
+    # Swappers for basic types
+    SWAPPERS['u16'] = 'bswap_16'
+    SWAPPERS['u32'] = 'bswap_32'
+    SWAPPERS['u64'] = 'bswap_64'
+
+    SWAPPERS['s16'] = 'bswap_16'
+    SWAPPERS['s32'] = 'bswap_32'
+    SWAPPERS['s64'] = 'bswap_64'
+
+    SWAPPERS['u48'] = 'inplace_bswap_48'
 
     emembers = [
             EnumMember('ITCH5X_MT_SYSTEM_EVENT'            , "'S'"),
