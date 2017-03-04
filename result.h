@@ -30,14 +30,14 @@ _Static_assert(sizeof(enum itch5x_message_type) >= 1,
         "Not enough bits to encode enum itch5x_message_type");
 
 struct itch5x_add_order {
-    uint8_t  message_type;
+    uint8_t message_type;
     uint16_t stock_locate;
     uint16_t tracking_number;
-    uint8_t  timestamp[6];
+    uint8_t timestamp[6];
     uint64_t order_reference_number;
-    uint8_t  side;
+    uint8_t side;
     uint32_t shares;
-    uint8_t  stock[8];
+    uint8_t stock[8];
     uint32_t price;
 } __attribute__((packed));
 _Static_assert(sizeof(struct itch5x_add_order) == 36,
