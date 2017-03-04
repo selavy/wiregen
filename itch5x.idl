@@ -1,0 +1,35 @@
+
+enum itch5x_message_type {
+    ITCH5X_MT_SYSTEM_EVENT             = 'S',
+    ITCH5X_MT_STOCK_DIRECTORY          = 'R',
+    ITCH5X_MT_STOCK_TRADING_ACTION     = 'H',
+    ITCH5X_MT_REG_SHO_RESTRICTED_IND   = 'Y',
+    ITCH5X_MT_MKT_PARTICIPANT_POSITION = 'L',
+    ITCH5X_MT_MWCB_DECLINE_LEVEL       = 'V',
+    ITCH5X_MT_MWCB_STATUS              = 'W',
+    ITCH5X_MT_IPO_QUOTING_UPDATE       = 'K',
+    ITCH5X_MT_ADD_ORDER                = 'A',
+    ITCH5X_MT_ADD_ORDER_ATTRIB         = 'F',
+    ITCH5X_MT_ORDER_EXECUTED           = 'E',
+    ITCH5X_MT_ORDER_EXECUTED_PRICE     = 'C',
+    ITCH5X_MT_ORDER_CANCEL             = 'X',
+    ITCH5X_MT_ORDER_DELETE             = 'D',
+    ITCH5X_MT_ORDER_REPLACE            = 'U',
+    ITCH5X_MT_TRADE                    = 'P',
+    ITCH5X_MT_CROSS_TRADE              = 'Q',
+    ITCH5X_MT_BROKEN_TRADE             = 'B',
+    ITCH5X_MT_NOII                     = 'I',
+    ITCH5X_MT_RPII                     = 'N',
+}
+
+struct itch5x_add_order [bigendian] [bytes=36] {
+    u8    message_type;
+    u16   stock_locate;
+    u16   tracking_number;
+    u48   timestamp;
+    u64   order_reference_number;
+    u8    side;
+    u32   shares;
+    u8[8] stock;
+    u32   price;
+}
