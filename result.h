@@ -47,46 +47,8 @@ __attribute__((always_inline)) inline
 void bswap_itch5x_add_order(struct itch5x_add_order *restrict val) {
     val->stock_locate = bswap_16(val->stock_locate);
     val->tracking_number = bswap_16(val->tracking_number);
-    val->order_reference_number = bswap_64(val->order_reference_number);
     inplace_bswap_48(val->timestamp);
+    val->order_reference_number = bswap_64(val->order_reference_number);
     val->shares = bswap_32(val->shares);
     val->price = bswap_32(val->price);
 }
-
-#if 0
-struct itch5x_add_order_attrib {
-} __attribute__((packed));
-_Static_assert(sizeof(struct itch5x_add_order_attrib),
-        "Incorrect size for struct itch5x_add_order_attrib");
-
-struct itch5x_order_executed {
-} __attribute__((packed));
-_Static_assert(sizeof(struct itch5x_order_executed),
-        "Incorrect size for struct itch5x_order_executed");
-
-struct itch5x_order_executed_price {
-} __attribute__((packed));
-_Static_assert(sizeof(struct itch5x_order_executed_price),
-        "Incorrect size for struct itch5x_order_executed_price");
-
-struct itch5x_order_cancel {
-} __attribute__((packed));
-_Static_assert(sizeof(struct itch5x_order_cancel),
-        "Incorrect size for struct itch5x_order_cancel");
-
-struct itch5x_order_delete {
-} __attribute__((packed));
-_Static_assert(sizeof(struct itch5x_order_delete),
-        "Incorrect size for struct itch5x_order_delete");
-
-struct itch5x_order_replace {
-} __attribute__((packed));
-_Static_assert(sizeof(struct itch5x_order_replace),
-        "Incorrect size for struct itch5x_order_replace");
-
-struct itch5x_trade {
-} __attribute__((packed));
-_Static_assert(sizeof(struct itch5x_trade),
-        "Incorrect size for struct itch5x_trade");
-#endif
-
