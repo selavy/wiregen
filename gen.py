@@ -74,7 +74,7 @@ class Lexer(object):
         self.linum += 1
         self.line = next(self.lines)
 
-    def token(self):
+    def tokenize(self):
         while 1:
             while 1:
                 m = self._ws_skip.search(self.line, self.pos)
@@ -102,6 +102,31 @@ class Lexer(object):
                 self._adv_line()
         print("Fell out of while loop")
 
+
+def Parser(object):
+    def __init__(self, lexer):
+        self.lexer = lexer
+        self.tokens = self.lexer.tokenize()
+        self.cur = next(self.tokens)
+
+    def _next(self):
+        self.cur = next(self.tokens)
+
+    def peek(self):
+        return self.cur
+
+    def expect(self, ttype):
+        if self.cur.ttype != ttype:
+            raise Exception('Error ({line}, {col}): Expected token of type {e}, instead found token of type {a}'.format(
+                line=self.cur.linum, col=self.cur.col, e=ttype, a=self.cur.type))
+        self._next()
+
+    def accept(self, ttype):
+        if self.cur.ttype == ttype:
+            self._next()
+            return True
+        else:
+            return False
 
 
 # Globals
