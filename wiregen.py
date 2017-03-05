@@ -240,8 +240,8 @@ def parse_enum(tokens):
             value = v.value
         bits = value.bit_length()
         width = max(width, bits)
-    while width % 8 != 0:
-        width += 1
+#    while width % 8 != 0:
+#        width += 1
 
     if 'bytes' in attribs:
         bytes_ = attribs['bytes']
@@ -257,6 +257,11 @@ def parse_enum(tokens):
         width = bits
 
     enum = Enum(name=name, members=values, width=width)
+    if width % 8 == 0:
+        ctype = 'uint{}_t'.format(width)
+    else:
+        raise Exception('Non-byte aligned enums not supported yet')
+    TYPES[name] = Type(width=width, ctype=ctype, span=1)
     for line in generate_enum(enum):
         yield line
 

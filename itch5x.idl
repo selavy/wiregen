@@ -27,118 +27,118 @@ enum itch5x_side [bytes=1] {
 }
 
 struct itch5x_add_order [bytes=36] {
-    u8    message_type;
-    u16   stock_locate;
-    u16   tracking_number;
-    u48   timestamp;
-    u64   order_reference_number;
-    u8    side;
-    u32   shares;
-    u8[8] stock;
-    u32   price;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 order_reference_number;
+    u8                  side;
+    u32                 shares;
+    u8[8]               stock;
+    u32                 price;
 }
 
 struct itch5x_add_order_attrib [bytes=40] {
-    u8    message_type;
-    u16   stock_locate;
-    u16   tracking_number;
-    u48   timestamp;
-    u64   order_reference_number;
-    u8    side;
-    u32   shares;
-    u8[8] stock;
-    u32   price;
-    u8[4] mpid;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 order_reference_number;
+    u8                  side;
+    u32                 shares;
+    u8[8]               stock;
+    u32                 price;
+    u8[4]               mpid;
 }
 
 struct itch5x_order_executed [bytes=31] {
-    u8  message_type;
-    u16 stock_locate;
-    u16 tracking_number;
-    u48 timestamp;
-    u64 order_reference_number;
-    u32 executed_shares;
-    u64 match_number;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 order_reference_number;
+    u32                 executed_shares;
+    u64                 match_number;
 }
 
 struct itch5x_order_executed_price [bytes=36] {
-    u8  message_type;
-    u16 stock_locate;
-    u16 tracking_number;
-    u48 timestamp;
-    u64 order_reference_number;
-    u32 executed_shares;
-    u64 match_number;
-    u8  printable;
-    u32 execution_price;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 order_reference_number;
+    u32                 executed_shares;
+    u64                 match_number;
+    u8                  printable;
+    u32                 execution_price;
 }
 
 struct itch5x_order_cancel [bytes=23] {
-    u8  message_type;
-    u16 stock_locate;
-    u16 tracking_number;
-    u48 timestamp;
-    u64 order_reference_number;
-    u32 canceled_shares;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 order_reference_number;
+    u32                 canceled_shares;
 }
 
 struct itch5x_order_delete [bytes=19] {
-    u8  message_type;
-    u16 stock_locate;
-    u16 tracking_number;
-    u48 timestamp;
-    u64 order_reference_number;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 order_reference_number;
 }
 
 struct itch5x_order_replace [bytes=35] {
-    u8  message_type;
-    u16 stock_locate;
-    u16 tracking_number;
-    u48 timestamp;
-    u64 orig_order_reference_number;
-    u64 new_order_reference_number;
-    u32 shares;
-    u32 price;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 orig_order_reference_number;
+    u64                 new_order_reference_number;
+    u32                 shares;
+    u32                 price;
 }
 
 struct itch5x_trade [bytes=44] {
-    u8    message_type;
-    u16   stock_locate;
-    u16   tracking_number;
-    u48   timestamp;
-    u64   order_reference_number;
-    u8    unused;
-    u32   shares;
-    u8[8] stock;
-    u32   price;
-    u64   match_number;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 order_reference_number;
+    u8                  unused;
+    u32                 shares;
+    u8[8]               stock;
+    u32                 price;
+    u64                 match_number;
 }
 
 struct itch5x_cross_trade [bytes=40] {
-    u8    message_type;
-    u16   stock_locate;
-    u16   tracking_number;
-    u48   timestamp;
-    u64   shares;
-    u8[8] stock;
-    u32   cross_price;
-    u64   match_number;
-    u8    cross_type;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 shares;
+    u8[8]               stock;
+    u32                 cross_price;
+    u64                 match_number;
+    u8                  cross_type;
 }
 
 struct itch5x_noii [bytes=50] {
-    u8    message_type;
-    u16   stock_locate;
-    u16   tracking_number;
-    u48   timestamp;
-    u64   paired_shares;
-    u64   imbalance_shares;
-    u8    imbalance_direction;
-    u8[8] stock;
-    u32   far_price;
-    u32   near_price;
-    u32   reference_price;
-    u8    cross_type;
-    u8    price_variation_ind;
+    itch5x_message_type message_type;
+    u16                 stock_locate;
+    u16                 tracking_number;
+    u48                 timestamp;
+    u64                 paired_shares;
+    u64                 imbalance_shares;
+    u8                  imbalance_direction;
+    u8[8]               stock;
+    u32                 far_price;
+    u32                 near_price;
+    u32                 reference_price;
+    u8                  cross_type;
+    u8                  price_variation_ind;
 }
 
