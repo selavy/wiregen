@@ -3,6 +3,8 @@
 from __future__ import print_function
 from collections import namedtuple
 import math
+import re
+import sys
 
 # Future support ideas:
 #   +namespace "itch5x", prepends "itch5x_" to every type
@@ -19,6 +21,87 @@ StructMember = namedtuple('StructMember',
 Struct = namedtuple('Struct',
         ['name', 'width', 'span', 'members'])
 Type = namedtuple('Type', ['width', 'ctype', 'span'])
+
+class TokenType(object):
+    UNK = 0
+    KWENUM = 1
+    KWSTRUCT = 2
+    IDENT = 3
+    EQUALS = 4
+    LBRACE = 5
+    RBRACE = 6
+    COMMA = 7
+    CHARACTER = 8
+    SEMICOLON = 9
+    LSBRACKET = 10
+    RSBRACKET = 11
+    INTEGER = 12
+    LPAREN = 13
+    RPAREN = 14
+
+Token = namedtuple('Token', ['ttype', 'value', 'linum', 'col'])
+
+class Lexer(object):
+    _rules = [
+            (r'\d+'          , TokenType.INTEGER),
+            (r'\('           , TokenType.LPAREN),
+            (r'\)'           , TokenType.RPAREN),
+            (r'='            , TokenType.EQUALS),
+            (r','            , TokenType.COMMA),
+            (r"'[a-zA-Z0-9]'", TokenType.CHARACTER),
+            (r';'            , TokenType.SEMICOLON),
+            (r'\['           , TokenType.LSBRACKET),
+            (r'\]'           , TokenType.RSBRACKET),
+            (r'\{'            , TokenType.LBRACE),
+            (r'\}'            , TokenType.RBRACE),
+            (r'enum'         , TokenType.KWENUM),
+            (r'struct'       , TokenType.KWSTRUCT),
+            (r'[a-zA-Z_][a-zA-Z0-9_]*' , TokenType.IDENT),
+            ]
+
+    def __init__(self, lines):
+        self.linum = 1
+        self.lines = lines
+        self.line = next(self.lines)
+        self.pos = 0
+        self.rules = []
+        for regex, ttype in Lexer._rules:
+            self.rules.append((re.compile(regex), ttype))
+        self._ws_skip = re.compile('\S')
+
+    def _adv_line(self):
+        self.pos = 0
+        self.linum += 1
+        self.line = next(self.lines)
+
+    def token(self):
+        while 1:
+            while 1:
+                m = self._ws_skip.search(self.line, self.pos)
+                if m:
+                    self.pos = m.start()
+                    break
+                else:
+                    self._adv_line()
+
+            matched = False
+            for regex, ttype in self.rules:
+                m = regex.match(self.line, self.pos)
+                if m:
+                    tok = Token(ttype=ttype, value=m.group(),
+                            linum=self.linum, col=self.pos)
+                    self.pos = m.end()
+                    yield tok
+                    matched = True
+
+            if not matched:
+                raise Exception('LexerError({line}, {col}): bad value'.format(
+                    line=self.linum, col=self.pos))
+
+            if self.pos > len(self.line):
+                self._adv_line()
+        print("Fell out of while loop")
+
 
 
 # Globals
@@ -92,6 +175,12 @@ def generate_struct(struct):
 
 
 if __name__ == '__main__':
+    with open('itch5x.idl') as f:
+        lexer = Lexer(lines=f)
+        for token in lexer.token():
+            print(token)
+    sys.exit()
+
     # Basic Types
     TYPES['u8']  = Type(width=8 , ctype='uint8_t' , span=1)
     TYPES['u16'] = Type(width=16, ctype='uint16_t', span=1)
