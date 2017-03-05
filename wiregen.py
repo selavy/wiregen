@@ -193,6 +193,23 @@ def parse_struct(tokens):
     for m in members:
         mwidth = TYPES[m.btype].width
         width += mwidth * m.span
+
+    if 'bytes' in attribs:
+        bytes_ = attribs['bytes']
+        if width % 8 != 0:
+            raise Exception('Width of struct {name} is not byte aligned! Width = {width} bits.'.format(
+                name=name, width=width))
+        b = int(width / 8)
+        if b != bytes_:
+            raise Exception('Width of struct {name} does not match bytes specification! Width = {width} bytes.'.format(
+                name=name, width=b))
+    elif 'bits' in attribs:
+        bits = attribs['bits']
+        if width != bits:
+            raise Exception('Width of struct {name} does not match bits specification! Width = {width} bits.'.format(
+                name=name, width=width))
+
+
     struct = Struct(name=name, width=width, span=1, members=members)
     for line in generate_struct(struct):
         yield line

@@ -61,7 +61,7 @@ struct itch5x_order_executed [bytes=31] {
     u64 match_number;
 }
 
-struct itch5x_order_executed_price [bytes=31] {
+struct itch5x_order_executed_price [bytes=36] {
     u8  message_type;
     u16 stock_locate;
     u16 tracking_number;
@@ -119,7 +119,7 @@ struct itch5x_cross_trade [bytes=40] {
     u16   stock_locate;
     u16   tracking_number;
     u48   timestamp;
-    u32   shares;
+    u64   shares;
     u8[8] stock;
     u32   cross_price;
     u64   match_number;
