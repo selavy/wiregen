@@ -38,6 +38,7 @@ class TokenType(object):
     INTEGER = 12
     LPAREN = 13
     RPAREN = 14
+    EOF = 15
 
 Token = namedtuple('Token', ['ttype', 'value', 'linum', 'col'])
 
@@ -103,14 +104,19 @@ class Lexer(object):
         print("Fell out of while loop")
 
 
-def Parser(object):
+# TODO(plesslie): this naming (Tokenizer and Lexer) is confusing - really
+# should just put it all into Lexer
+class Tokenizer(object):
     def __init__(self, lexer):
         self.lexer = lexer
         self.tokens = self.lexer.tokenize()
         self.cur = next(self.tokens)
 
     def _next(self):
-        self.cur = next(self.tokens)
+        try:
+            self.cur = next(self.tokens)
+        except StopIterator:
+            self.cur = Token(ttype=TokenType.EOF, value='', linum=None, col=None)
 
     def peek(self):
         return self.cur
@@ -118,7 +124,7 @@ def Parser(object):
     def expect(self, ttype):
         if self.cur.ttype != ttype:
             raise Exception('Error ({line}, {col}): Expected token of type {e}, instead found token of type {a}'.format(
-                line=self.cur.linum, col=self.cur.col, e=ttype, a=self.cur.type))
+                line=self.cur.linum, col=self.cur.col, e=ttype, a=self.cur.ttype))
         self._next()
 
     def accept(self, ttype):
@@ -127,6 +133,46 @@ def Parser(object):
             return True
         else:
             return False
+
+    def linum(self):
+        return self.cur.linum
+
+    def column(self):
+        return self.cur.col
+
+
+def parse(tokens):
+    while not tokens.accept(TokenType.EOF):
+        if tokens.accept(TokenType.KWSTRUCT):
+            yield parse_struct(tokens)
+        elif tokens.accept(TokenType.KWENUM):
+            yield parse_enum(tokens)
+        else:
+            raise Exception('ParseError({line}, {col}): Unexpected token'.format(
+                line=tokens.linum(), col=tokens.column()))
+
+def parse_enum(tokens):
+    name = tokens.peek().value
+    tokens.expect(TokenType.IDENT)
+    tokens.expect(TokenType.LBRACE)
+    print("name = {}".format(name))
+    values = [v for v in parse_enum_member(tokens)]
+    print(values)
+    raise StopIteration
+
+
+def parse_enum_member(tokens):
+    while not tokens.accept(TokenType.RBRACE):
+        name = tokens.peek().value
+        tokens.expect(TokenType.IDENT)
+        tokens.expect(TokenType.EQUALS)
+        value = tokens.peek().value
+        if not (tokens.accept(TokenType.CHARACTER) or tokens.accept(TokenType.INTEGER)):
+            raise Exception('ParseError({line}, {col}): Expected character or integer for enum value'.format(
+                line=tokens.linum(), col=tokens.column()))
+        yield EnumMember(name=name, value=value)
+        if not tokens.accept(TokenType.COMMA):
+            break
 
 
 # Globals
@@ -202,8 +248,9 @@ def generate_struct(struct):
 if __name__ == '__main__':
     with open('itch5x.idl') as f:
         lexer = Lexer(lines=f)
-        for token in lexer.token():
-            print(token)
+        tokens = Tokenizer(lexer)
+        for line in parse(tokens):
+            print(line)
     sys.exit()
 
     # Basic Types
