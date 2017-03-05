@@ -101,7 +101,6 @@ class Lexer(object):
 
             if self.pos > len(self.line):
                 self._adv_line()
-        print("Fell out of while loop")
 
 
 # TODO(plesslie): this naming (Tokenizer and Lexer) is confusing - really
@@ -115,7 +114,7 @@ class Tokenizer(object):
     def _next(self):
         try:
             self.cur = next(self.tokens)
-        except StopIterator:
+        except StopIteration:
             self.cur = Token(ttype=TokenType.EOF, value='', linum=None, col=None)
 
     def peek(self):
@@ -144,14 +143,59 @@ class Tokenizer(object):
 def parse(tokens):
     while not tokens.accept(TokenType.EOF):
         if tokens.accept(TokenType.KWSTRUCT):
-            yield parse_struct(tokens)
+            for line in  parse_struct(tokens):
+                yield line
+            yield ''
         elif tokens.accept(TokenType.KWENUM):
-            print("calling parse_enum")
             for line in parse_enum(tokens):
                 yield line
+            yield ''
         else:
             raise Exception("ParseError({line}, {col}): Unexpected token '{tok}'".format(
                 line=tokens.linum(), col=tokens.column(), tok=tokens.peek().value))
+
+def parse_struct_member(tokens):
+    members = []
+    while not tokens.accept(TokenType.RBRACE):
+        btype = tokens.peek().value
+        tokens.expect(TokenType.IDENT)
+        if tokens.accept(TokenType.LSBRACKET):
+            span = tokens.peek().value
+            tokens.expect(TokenType.INTEGER)
+            span = int(span)
+            tokens.expect(TokenType.RSBRACKET)
+        else:
+            span = 1
+        name = tokens.peek().value
+        tokens.expect(TokenType.IDENT)
+        tokens.expect(TokenType.SEMICOLON)
+        members.append(StructMember(name=name, btype=btype, span=span))
+    return members
+
+def parse_struct(tokens):
+    name = tokens.peek().value
+    tokens.expect(TokenType.IDENT)
+    attribs = {}
+    while tokens.accept(TokenType.LSBRACKET):
+        key = tokens.peek().value
+        tokens.expect(TokenType.IDENT)
+        tokens.expect(TokenType.EQUALS)
+        val = tokens.peek().value
+        # TODO(plesslie): add other arguments type (e.g. string)
+        if tokens.accept(TokenType.INTEGER):
+            attribs[key] = int(val)
+        else:
+            raise Exception("Invalid type for keyword argument")
+        tokens.expect(TokenType.RSBRACKET)
+    tokens.expect(TokenType.LBRACE)
+    members = parse_struct_member(tokens)
+    width = 0
+    for m in members:
+        mwidth = TYPES[m.btype].width
+        width += mwidth * m.span
+    struct = Struct(name=name, width=width, span=1, members=members)
+    for line in generate_struct(struct):
+        yield line
 
 def parse_enum(tokens):
     name = tokens.peek().value
@@ -171,7 +215,6 @@ def parse_enum(tokens):
     enum = Enum(name=name, members=values, width=width)
     for line in generate_enum(enum):
         yield line
-    raise StopIteration
 
 
 def parse_enum_members(tokens):
@@ -261,13 +304,6 @@ def generate_struct(struct):
 
 
 if __name__ == '__main__':
-    with open('itch5x.idl') as f:
-        lexer = Lexer(lines=f)
-        tokens = Tokenizer(lexer)
-        for line in parse(tokens):
-            print(line)
-    sys.exit()
-
     # Basic Types
     TYPES['u8']  = Type(width=8 , ctype='uint8_t' , span=1)
     TYPES['u16'] = Type(width=16, ctype='uint16_t', span=1)
@@ -292,62 +328,67 @@ if __name__ == '__main__':
 
     SWAPPERS['u48'] = 'inplace_bswap_48'
 
-    emembers = [
-            EnumMember('ITCH5X_MT_SYSTEM_EVENT'            , "'S'"),
-            EnumMember('ITCH5X_MT_STOCK_DIRECTORY'         , "'R'"),
-            EnumMember('ITCH5X_MT_STOCK_TRADING_ACTION'    , "'H'"),
-            EnumMember('ITCH5X_MT_REG_SHO_RESTRICTED_IND'  , "'Y'"),
-            EnumMember('ITCH5X_MT_MKT_PARTICIPANT_POSITION', "'L'"),
-            EnumMember('ITCH5X_MT_MWCB_DECLINE_LEVEL'      , "'V'"),
-            EnumMember('ITCH5X_MT_MWCB_STATUS'             , "'W'"),
-            EnumMember('ITCH5X_MT_IPO_QUOTING_UPDATE'      , "'K'"),
-            EnumMember('ITCH5X_MT_ADD_ORDER'               , "'A'"),
-            EnumMember('ITCH5X_MT_ADD_ORDER_ATTRIB'        , "'F'"),
-            EnumMember('ITCH5X_MT_ORDER_EXECUTED'          , "'E'"),
-            EnumMember('ITCH5X_MT_ORDER_EXECUTED_PRICE'    , "'C'"),
-            EnumMember('ITCH5X_MT_ORDER_CANCEL'            , "'X'"),
-            EnumMember('ITCH5X_MT_ORDER_DELETE'            , "'D'"),
-            EnumMember('ITCH5X_MT_ORDER_REPLACE'           , "'U'"),
-            EnumMember('ITCH5X_MT_TRADE'                   , "'P'"),
-            EnumMember('ITCH5X_MT_CROSS_TRADE'             , "'Q'"),
-            EnumMember('ITCH5X_MT_BROKEN_TRADE'            , "'B'"),
-            EnumMember('ITCH5X_MT_NOII'                    , "'I'"),
-            EnumMember('ITCH5X_MT_RPII'                    , "'N'"),
-            ]
-    enum = Enum(name='itch5x_message_type', members=emembers, width=8)
-
-
     print('#pragma once')
     print()
     print('#include "bswap_util.h"')
     print()
-    #print('// Generated file.  Do not edit.')
     print("/* Do not edit.  Generated by 'wiregen.py itch5x.idl' */")
-
     print()
 
-    for line in generate_enum(enum):
-        print(line)
-    print()
+    with open('itch5x.idl') as f:
+        lexer = Lexer(lines=f)
+        tokens = Tokenizer(lexer)
+        for line in parse(tokens):
+            print(line)
 
-
-    smembers = [
-            StructMember(name='message_type'          , btype='u8' , span=1),
-            StructMember(name='stock_locate'          , btype='u16', span=1),
-            StructMember(name='tracking_number'       , btype='u16', span=1),
-            StructMember(name='timestamp'             , btype='u48', span=1),
-            StructMember(name='order_reference_number', btype='u64', span=1),
-            StructMember(name='side'                  , btype='u8' , span=1),
-            StructMember(name='shares'                , btype='u32', span=1),
-            StructMember(name='stock'                 , btype='u8' , span=8),
-            StructMember(name='price'                 , btype='u32', span=1),
-            ]
-    struct = Struct(name='itch5x_add_order',
-            width=36*8,
-            span=1,
-            members=smembers)
-
-    for line in generate_struct(struct):
-        print(line)
-    print()
+#    emembers = [
+#            EnumMember('ITCH5X_MT_SYSTEM_EVENT'            , "'S'"),
+#            EnumMember('ITCH5X_MT_STOCK_DIRECTORY'         , "'R'"),
+#            EnumMember('ITCH5X_MT_STOCK_TRADING_ACTION'    , "'H'"),
+#            EnumMember('ITCH5X_MT_REG_SHO_RESTRICTED_IND'  , "'Y'"),
+#            EnumMember('ITCH5X_MT_MKT_PARTICIPANT_POSITION', "'L'"),
+#            EnumMember('ITCH5X_MT_MWCB_DECLINE_LEVEL'      , "'V'"),
+#            EnumMember('ITCH5X_MT_MWCB_STATUS'             , "'W'"),
+#            EnumMember('ITCH5X_MT_IPO_QUOTING_UPDATE'      , "'K'"),
+#            EnumMember('ITCH5X_MT_ADD_ORDER'               , "'A'"),
+#            EnumMember('ITCH5X_MT_ADD_ORDER_ATTRIB'        , "'F'"),
+#            EnumMember('ITCH5X_MT_ORDER_EXECUTED'          , "'E'"),
+#            EnumMember('ITCH5X_MT_ORDER_EXECUTED_PRICE'    , "'C'"),
+#            EnumMember('ITCH5X_MT_ORDER_CANCEL'            , "'X'"),
+#            EnumMember('ITCH5X_MT_ORDER_DELETE'            , "'D'"),
+#            EnumMember('ITCH5X_MT_ORDER_REPLACE'           , "'U'"),
+#            EnumMember('ITCH5X_MT_TRADE'                   , "'P'"),
+#            EnumMember('ITCH5X_MT_CROSS_TRADE'             , "'Q'"),
+#            EnumMember('ITCH5X_MT_BROKEN_TRADE'            , "'B'"),
+#            EnumMember('ITCH5X_MT_NOII'                    , "'I'"),
+#            EnumMember('ITCH5X_MT_RPII'                    , "'N'"),
+#            ]
+#    enum = Enum(name='itch5x_message_type', members=emembers, width=8)
+#
+#
+#
+#    for line in generate_enum(enum):
+#        print(line)
+#    print()
+#
+#
+#    smembers = [
+#            StructMember(name='message_type'          , btype='u8' , span=1),
+#            StructMember(name='stock_locate'          , btype='u16', span=1),
+#            StructMember(name='tracking_number'       , btype='u16', span=1),
+#            StructMember(name='timestamp'             , btype='u48', span=1),
+#            StructMember(name='order_reference_number', btype='u64', span=1),
+#            StructMember(name='side'                  , btype='u8' , span=1),
+#            StructMember(name='shares'                , btype='u32', span=1),
+#            StructMember(name='stock'                 , btype='u8' , span=8),
+#            StructMember(name='price'                 , btype='u32', span=1),
+#            ]
+#    struct = Struct(name='itch5x_add_order',
+#            width=36*8,
+#            span=1,
+#            members=smembers)
+#
+#    for line in generate_struct(struct):
+#        print(line)
+#    print()
 
