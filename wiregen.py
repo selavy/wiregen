@@ -217,6 +217,19 @@ def parse_struct(tokens):
 def parse_enum(tokens):
     name = tokens.peek().value
     tokens.expect(TokenType.IDENT)
+    attribs = {}
+    while tokens.accept(TokenType.LSBRACKET):
+        key = tokens.peek().value
+        tokens.expect(TokenType.IDENT)
+        tokens.expect(TokenType.EQUALS)
+        val = tokens.peek().value
+        # TODO(plesslie): refactor into parse_attributes()
+        if tokens.accept(TokenType.INTEGER):
+            val = int(val)
+        else:
+            raise Exception("Invalid type for keyword argument")
+        attribs[key] = val
+        tokens.accept(TokenType.RSBRACKET)
     tokens.expect(TokenType.LBRACE)
     values = parse_enum_members(tokens)
     width = 0
@@ -229,6 +242,20 @@ def parse_enum(tokens):
         width = max(width, bits)
     while width % 8 != 0:
         width += 1
+
+    if 'bytes' in attribs:
+        bytes_ = attribs['bytes']
+        if bytes_ * 8 < width:
+            raise Exception('Invalid bytes specification for enum {name}!'.format(
+                name=name))
+        width = bytes_ * 8
+    elif 'bits' in attribs:
+        bits = attribs['bits']
+        if bits < width:
+            raise Exception('Invalid bits specification for enum {name}!'.format(
+                name=name))
+        width = bits
+
     enum = Enum(name=name, members=values, width=width)
     for line in generate_enum(enum):
         yield line
