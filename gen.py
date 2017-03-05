@@ -146,22 +146,36 @@ def parse(tokens):
         if tokens.accept(TokenType.KWSTRUCT):
             yield parse_struct(tokens)
         elif tokens.accept(TokenType.KWENUM):
-            yield parse_enum(tokens)
+            print("calling parse_enum")
+            for line in parse_enum(tokens):
+                yield line
         else:
-            raise Exception('ParseError({line}, {col}): Unexpected token'.format(
-                line=tokens.linum(), col=tokens.column()))
+            raise Exception("ParseError({line}, {col}): Unexpected token '{tok}'".format(
+                line=tokens.linum(), col=tokens.column(), tok=tokens.peek().value))
 
 def parse_enum(tokens):
     name = tokens.peek().value
     tokens.expect(TokenType.IDENT)
     tokens.expect(TokenType.LBRACE)
-    print("name = {}".format(name))
-    values = [v for v in parse_enum_member(tokens)]
-    print(values)
+    values = parse_enum_members(tokens)
+    width = 0
+    for v in values:
+        if isinstance(v.value, str):
+            value = ord(v.value[1])
+        else:
+            value = v.value
+        bits = value.bit_length()
+        width = max(width, bits)
+    while width % 8 != 0:
+        width += 1
+    enum = Enum(name=name, members=values, width=width)
+    for line in generate_enum(enum):
+        yield line
     raise StopIteration
 
 
-def parse_enum_member(tokens):
+def parse_enum_members(tokens):
+    members = []
     while not tokens.accept(TokenType.RBRACE):
         name = tokens.peek().value
         tokens.expect(TokenType.IDENT)
@@ -170,9 +184,10 @@ def parse_enum_member(tokens):
         if not (tokens.accept(TokenType.CHARACTER) or tokens.accept(TokenType.INTEGER)):
             raise Exception('ParseError({line}, {col}): Expected character or integer for enum value'.format(
                 line=tokens.linum(), col=tokens.column()))
-        yield EnumMember(name=name, value=value)
+        members.append(EnumMember(name=name, value=value))
         if not tokens.accept(TokenType.COMMA):
             break
+    return members
 
 
 # Globals
