@@ -5,7 +5,7 @@
 #include <string.h>
 
 __attribute__((always_inline)) inline
-void inplace_bswap_48(char val[6]) {
+void inplace_bswap_48(uint8_t val[6]) {
     uint64_t buffer;
     memcpy(&buffer, &val[0], 6);
     buffer = bswap_64(buffer);
@@ -13,7 +13,7 @@ void inplace_bswap_48(char val[6]) {
 }
 
 __attribute__((always_inline)) inline
-void inplace_bswap_56(char val[7]) {
+void inplace_bswap_56(uint8_t val[7]) {
     uint64_t buffer;
     memcpy(&buffer, &val[0], 7);
     buffer = bswap_64(buffer);
